@@ -1,0 +1,24 @@
+{
+    "name": "xel/asycn",
+    "description": "Rebuild HTTP Server Based on Swoole BASE/PROCESS",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "Xel\\Async\\": "src/",
+            "Xel\\Devise\\": "devise/"
+        }
+    },
+    "authors": [
+        {
+            "name": "bxel07",
+            "email": "yogipratama.ut@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=8.2",
+        "nikic/fast-route": "^2.0@dev",
+        "nyholm/psr7": "^1.8@dev",
+        "imefisto/psr-swoole-native": "dev-master"
+    }
+}

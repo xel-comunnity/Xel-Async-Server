@@ -1,0 +1,5 @@
+.phpunit.result.cache
+*.swp
+vendor
+/build/
+/infection.log

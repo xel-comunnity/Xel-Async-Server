@@ -3,9 +3,10 @@
 namespace Xel\Async\Router\Attribute;
 
 use Attribute;
+use Xel\Async\Router\Attribute\Contract\RouteAPP;
 
 #[Attribute(Attribute::TARGET_METHOD | Attribute::IS_REPEATABLE)]
-class Router
+class Router implements RouteAPP
 {
     public function __construct
     (

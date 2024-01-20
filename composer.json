@@ -4,8 +4,7 @@
     "type": "library",
     "autoload": {
         "psr-4": {
-            "Xel\\Async\\": "src/",
-            "Xel\\Devise\\": "devise/"
+            "Xel\\Async\\": "src/"
         }
     },
     "authors": [
@@ -17,8 +16,6 @@
     "minimum-stability": "dev",
     "require": {
         "php": ">=8.2",
-        "nikic/fast-route": "^2.0@dev",
-        "nyholm/psr7": "^1.8@dev",
-        "imefisto/psr-swoole-native": "dev-master"
+        "nikic/fast-route": "^2.0@dev"
     }
 }

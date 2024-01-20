@@ -4,10 +4,12 @@ namespace Xel\Async\Router;
 
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
-use Imefisto\PsrSwoole\ResponseMerger;
-use Psr\Http\Message\ResponseInterface;
+use Nyholm\Psr7\Stream;
+use Psr\Http\Message\ServerRequestInterface;
 use ReflectionException;
 use Swoole\Http\Response;
+use Xel\Async\Http\Handler\Handler;
+use Xel\Async\Map\PsrFactory;
 use Xel\Async\Router\Attribute\Extract\Extractor;
 use function FastRoute\simpleDispatcher;
 
@@ -44,29 +46,16 @@ class Main
 
     public static function load
     (
-        $routeInfo, ResponseInterface $responseInterface,
-        ResponseMerger $responseMerger,
+        $routeInfo,
         Response $response
     ): void
     {
         switch ($routeInfo[0]) {
             case Dispatcher::NOT_FOUND:
-                $responseInterface->withStatus(404);
-                $responseInterface->getBody()->write('404 Not Found');
-
-                $responseMerger->toSwoole(
-                    $responseInterface,
-                    $response
-                );
+                $response->status('404', "NOT FOUND");
                 break;
             case Dispatcher::METHOD_NOT_ALLOWED:
-                $responseInterface->withStatus(405);
-                $responseInterface->getBody()->write('405 Method Not Allowed');
-
-                $responseMerger->toSwoole(
-                    $responseInterface,
-                    $response
-                );
+                $response->status('405', "NOT ALLOWED");
                 break;
             case Dispatcher::FOUND:
                 $handler = $routeInfo[1];
@@ -77,10 +66,8 @@ class Main
                 if(is_array($handler) && count($handler) == 2) {
                     $class = $handler[0];
                     $method = $handler[1];
-
                     $instance = new $class();
                     $handler = [$instance, $method];
-
                     /**
                      * Inject response as param to handle return value
                      */
@@ -89,12 +76,12 @@ class Main
                     }
                 }
 
-                $data = call_user_func_array($handler, $param);
-                $responseInterface->getBody()->write($data);
-                $responseMerger->toSwoole(
-                    $responseInterface,
-                    $response
-                );
+                /**
+                 * Make return as response body
+                 */
+                $data  = call_user_func_array($handler, $param);
+
+                $response->end($data);
                 break;
         }
     }

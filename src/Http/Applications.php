@@ -7,9 +7,6 @@ use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Xel\Async\Http\Server\Servers;
 use Xel\Async\Router\Main;
-use Imefisto\PsrSwoole\Request as PsrRequest;
-use Imefisto\PsrSwoole\ResponseMerger;
-use Nyholm\Psr7\Factory\Psr17Factory;
 
 class Applications
 {
@@ -30,54 +27,16 @@ class Applications
         // ? initial loader for dynamic router
         Main::initialize($loader);
 
-        /**
-         * Instance of PSR17 Http interface
-         */
-        $uriFactory = new Psr17Factory();
-        $streamFactory = new Psr17Factory();
-        $responseFactory = new Psr17Factory();
-        $responseMerger = new ResponseMerger();
-
         static::$instance->instance
-            ->on('request', function (Request $request, Response $response)
-            use (
-                $uriFactory,
-                $streamFactory,
-                $responseFactory,
-                $responseMerger
-            )
-            {
+            ->on('request', function
+            (
+                Request $request,
+                Response $response
+            ) {
 
-            /**
-             * create psr request from swoole request
-             */
-            $psrRequest = new PsrRequest(
-                $request,
-                $uriFactory,
-                $streamFactory
-            );
-
-            /**
-             * create response factory
-             */
-
-            $psrResponse = $responseFactory->createResponse();
-
-            // ? Handle the CORS preflight request (OPTIONS request)
-            if ($request->server['request_method'] === 'OPTIONS') {
-                $psrResponse->withStatus(200);
-                $responseMerger->toSwoole(
-                  $psrResponse,
-                  $response
-                );
-                return;
-            }
-
-            // ? Load Router Dynamic router
+            // ? Server Loader
             Main::load(
-                Main::dispatch($psrRequest->getMethod(), $psrRequest->getUri()->getPath()),
-                $psrResponse,
-                $responseMerger,
+                Main::dispatch($request->server["request_method"], $request->server["request_uri"]),
                 $response
             );
        });

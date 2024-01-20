@@ -2,14 +2,10 @@
 
 namespace Xel\Async\Router\Attribute\Extract;
 
+use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionException;
 use Xel\Async\Router\Attribute\Router;
-use Xel\Async\Router\Loader\ClassLoader;
-use Xel\Devise\Service\RegisterService\Register;
-
-//require_once __DIR__."/../../../../vendor/autoload.php";
-
 
 class Extractor
 {
@@ -32,7 +28,7 @@ class Extractor
             $reflection = new ReflectionClass($value);
             $methods = $reflection->getMethods();
             foreach ($methods as $method) {
-                $attr = $method->getAttributes(Router::class);
+                $attr = $method->getAttributes(Router::class, ReflectionAttribute::IS_INSTANCEOF);
                 foreach ($attr as $attribute) {
                     $getAttrInstance = $attribute->newInstance();
                     $getMethod = $method->getName();

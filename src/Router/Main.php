@@ -110,7 +110,6 @@ class Main
                 $response->status('405', "NOT ALLOWED");
                 break;
             case Dispatcher::FOUND:
-
                 $res = $responseFactory->createResponse()->withBody($streamFactory->createStream($this->generateInstance($routeInfo[1], $routeInfo[2])));
                 $res = $res->withStatus(200);
                 $psrFactory->connectResponse($res, $response);

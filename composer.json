@@ -16,6 +16,14 @@
     "minimum-stability": "dev",
     "require": {
         "php": ">=8.2",
-        "nikic/fast-route": "^2.0@dev"
+        "nikic/fast-route": "^2.0@dev",
+        "xel/psr7bridge": "dev-main"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "2.0.x-dev"
+    },
+
+    "scripts": {
+        "analyse": "phpstan analyse"
     }
 }

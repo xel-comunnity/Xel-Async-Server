@@ -9,20 +9,27 @@ use Xel\Async\Router\Attribute\Router;
 
 class Extractor
 {
-    private static array $param = [];
+    /**
+     * @var array<int|string, mixed>
+     */
+    private array $param = [];
 
     /**
+     * @param array<string, mixed> $loader
+     * @return array<int|string, mixed>
      * @throws ReflectionException
      */
-    public static function setLoader(array $loader): array
+    public function setLoader(array $loader): array
     {
-       return static::Extract($loader);
+       return $this->Extract($loader);
     }
 
     /**
+     * @param array<string, mixed> $loader
+     * @return array<int|string, mixed>
      * @throws ReflectionException
      */
-    private static function Extract(array $loader): array
+    private function Extract(array $loader): array
     {
         foreach ($loader as $value){
             $reflection = new ReflectionClass($value);
@@ -38,12 +45,12 @@ class Extractor
                         "Class" => $value,
                         "Method" => $getMethod,
                     ];
-                    self::$param[] = $tmp;
+                    $this->param[] = $tmp;
                 }
             }
         }
 
-        return static::$param;
+        return $this->param;
     }
 
 }

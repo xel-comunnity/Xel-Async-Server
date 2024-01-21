@@ -4,50 +4,102 @@ namespace Xel\Async\Router;
 
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
-use Nyholm\Psr7\Stream;
+use HttpSoft\Message\ResponseFactory;
+use HttpSoft\Message\StreamFactory;
+use InvalidArgumentException;
 use Psr\Http\Message\ServerRequestInterface;
 use ReflectionException;
-use Swoole\Http\Response;
-use Xel\Async\Http\Handler\Handler;
-use Xel\Async\Map\PsrFactory;
+use Swoole\Http\Response as SwooleResponse;
 use Xel\Async\Router\Attribute\Extract\Extractor;
-use function FastRoute\simpleDispatcher;
-
-/**
- * Merging Swoole HTTP standard to swoole psr 7 using lazy implementation
- */
+use Xel\Psr7bridge\PsrFactory;
+use function FastRoute\cachedDispatcher;
 
 class Main
 {
-    private static ?Dispatcher $dispatcher = null;
+    /**
+     * @var Dispatcher
+     */
+    private Dispatcher $dispatcher;
 
     /**
+     * @var array<string|int|false, mixed>
+     */
+    private array $param = [];
+
+    /**
+     * @param array<string, mixed> $loader
+     * @return Main
      * @throws ReflectionException
      */
-    public static function initialize(array $loader): void
+    public function __invoke(array $loader): self
     {
       // ? inject to Loader
-        $inLoader = Extractor::setLoader($loader);
+      $inLoader = (new Extractor())->setLoader($loader);
 
-      static::$dispatcher = simpleDispatcher(function (RouteCollector $routeCollector) use ($inLoader){
-        $routeCollector->addGroup('/api', function (RouteCollector $r) use ($inLoader){
+      // encode json
+      $data = json_encode($loader);
+
+      // Check if encoding was successful
+      if ($data === false) {
+        echo 'JSON encoding failed!';
+        return $this;
+      }
+      // ? make hash
+      $hashRoute =  hash('sha256', $data);
+
+      // ? get instance tmp cache
+      $cache_key = 'xel_route_cache'. $hashRoute;
+
+      $cache_dir = __DIR__.'/../../src/test/cache/'.$cache_key;
+      $this->dispatcher = cachedDispatcher(function (RouteCollector $routeCollector) use ($inLoader, $loader){
+        $routeCollector->addGroup('/api', function (RouteCollector $r) use ($inLoader, $loader){
             foreach ($inLoader as $item){
-                $r->addRoute($item['RequestMethod'],$item['Uri'],[$item['Class'],$item['Method']]);
+                $class = $item['Class'];
+                $method = $item['Method'];
+                // ? check the class in exist or not
+                if (in_array($class, $loader,true)){
+                    $r->addRoute($item['RequestMethod'], $item['Uri'], [$class, $method]);
+                }else {
+                    // ? Handle unknown class
+                    echo "Unknown class: $class\n";
+                }
             }
         });
+      }, [
+          'cacheDisabled' => false,
+          'cacheKey' => $cache_dir
 
-      });
+      ]);
+      return $this;
     }
 
-    public static function dispatch(string $method, string $uri): Dispatcher\Result\Matched|Dispatcher\Result\MethodNotAllowed|Dispatcher\Result\NotMatched
+    /**
+     * @param string $method
+     * @param string $uri
+     * @return Dispatcher\Result\Matched|Dispatcher\Result\MethodNotAllowed|Dispatcher\Result\NotMatched
+     */
+    public function dispatch(string $method, string $uri): Dispatcher\Result\Matched|Dispatcher\Result\MethodNotAllowed|Dispatcher\Result\NotMatched
     {
-        return static::$dispatcher->dispatch($method,$uri);
+        return $this->dispatcher->dispatch($method,$uri);
     }
 
-    public static function load
+    /**
+     * @param Dispatcher\Result\Matched|Dispatcher\Result\NotMatched|Dispatcher\Result\MethodNotAllowed $routeInfo
+     * @param PsrFactory $psrFactory
+     * @param StreamFactory $streamFactory
+     * @param ServerRequestInterface $requestFactory
+     * @param ResponseFactory $responseFactory
+     * @param SwooleResponse $response
+     * @return void
+     */
+    public function load
     (
-        $routeInfo,
-        Response $response
+        Dispatcher\Result\Matched|Dispatcher\Result\NotMatched|Dispatcher\Result\MethodNotAllowed $routeInfo,
+        PsrFactory             $psrFactory,
+        StreamFactory          $streamFactory,
+        ServerRequestInterface $requestFactory,
+        ResponseFactory        $responseFactory,
+        SwooleResponse         $response
     ): void
     {
         switch ($routeInfo[0]) {
@@ -58,31 +110,50 @@ class Main
                 $response->status('405', "NOT ALLOWED");
                 break;
             case Dispatcher::FOUND:
-                $handler = $routeInfo[1];
-                $vars = $routeInfo[2];
-                $param = [];
 
-                // ? Call the handler
-                if(is_array($handler) && count($handler) == 2) {
-                    $class = $handler[0];
-                    $method = $handler[1];
-                    $instance = new $class();
-                    $handler = [$instance, $method];
-                    /**
-                     * Inject response as param to handle return value
-                     */
-                    foreach ($vars as $value) {
-                        $param[] = $value;
-                    }
-                }
-
-                /**
-                 * Make return as response body
-                 */
-                $data  = call_user_func_array($handler, $param);
-
-                $response->end($data);
+                $res = $responseFactory->createResponse()->withBody($streamFactory->createStream($this->generateInstance($routeInfo[1], $routeInfo[2])));
+                $res = $res->withStatus(200);
+                $psrFactory->connectResponse($res, $response);
                 break;
+        }
+    }
+
+    /**
+     * @param array{string, string} $handler
+     * @param array{mixed} $vars
+     * @return string
+     */
+    private function generateInstance(array $handler, array $vars):string
+    {
+        // ? Ensure that $handler is an array and has at least two elements
+        if (count($handler) >= 2) {
+            $class = $handler[0];
+            $method = $handler[1];
+
+            // ? Check if $class is a valid class name
+            if (class_exists($class)) {
+                // ? Check if $method is a valid method of $class
+                if (method_exists($class, $method)) {
+                    // ? Create an instance of $class
+                    $instance = new $class();
+                    $object = [$instance, $method];
+
+                    // ? Inject response as param to handle return value
+                    foreach ($vars as $value) {
+                        $this->param[] = $value;
+                    }
+
+                    // ? Ensure that $instance is an object before calling the method
+                    /** @var callable $object */
+                    return call_user_func_array($object, $this->param);
+                } else {
+                    throw new InvalidArgumentException('Invalid method name');
+                }
+            } else {
+                throw new InvalidArgumentException('Invalid class name');
+            }
+        } else {
+            throw new InvalidArgumentException('Invalid $handler array structure');
         }
     }
 }

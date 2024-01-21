@@ -1,16 +1,17 @@
 <?php
 
 namespace Xel\Async\Http\Server;
-
-use SensitiveParameter;
 use Swoole\Http\Server;
 
 class Servers
 {
     public Server $instance;
-    public function __construct(#[SensitiveParameter] array $config)
-    {
 
+    /**
+     * @param array<string, mixed> $config
+     */
+    public function __construct(array $config)
+    {
         // ? Initialize the server instance
         $this->initialize($config);
 
@@ -18,11 +19,13 @@ class Servers
         $this->instance->on('start', function () use ($config) {
             echo "Listening at " . $config['api_server']['host'] . ":" . $config['api_server']['port'] . " \n";
         });
-
-        return $this;
     }
 
-    private function initialize($config): void
+    /**
+     * @param array<string, mixed> $config
+     * @return void
+     */
+    private function initialize(array $config): void
     {
         // ? Get server configuration
         $mode = $config['api_server']['mode'];

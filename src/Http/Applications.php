@@ -1,51 +1,84 @@
 <?php
-
 namespace Xel\Async\Http;
+
+use HttpSoft\Message\ServerRequestFactory;
+use HttpSoft\Message\StreamFactory;
+use HttpSoft\Message\UploadedFileFactory;
+use HttpSoft\Message\ResponseFactory;
 use ReflectionException;
-use SensitiveParameter;
-use Swoole\Http\Request;
-use Swoole\Http\Response;
+use Swoole\Http\Request as SwooleRequest;
+use Swoole\Http\Response as SwooleResponse;
 use Xel\Async\Http\Server\Servers;
 use Xel\Async\Router\Main;
+use Xel\Psr7bridge\PsrFactory;
 
 class Applications
 {
-    private static ?Servers $instance;
+    private Servers $instance;
 
-    public static function initialize(#[SensitiveParameter] array $config): self
+    /**
+     * @param array<string, mixed> $config
+     * @return self
+     */
+    public function initialize(array $config): self
     {
-        static::$instance = new Servers($config);
-
-        return new self();
+        $this->instance = new Servers($config);
+        return $this;
     }
 
     /**
+     * @param array<string, mixed> $loader
+     * @return self
      * @throws ReflectionException
      */
-    public static function onEvent(array $loader): self
+    public function onEvent(array $loader): self
     {
         // ? initial loader for dynamic router
-        Main::initialize($loader);
+        $routerApp =  (new Main())($loader);
 
-        static::$instance->instance
+        // ? initial Psr Bridge for Http Request & Response
+        $psrRequestBridge = new PsrFactory(
+            new ServerRequestFactory(),
+            new StreamFactory(),
+            new UploadedFileFactory()
+        );
+
+        $psrResponseBride = new ResponseFactory();
+
+        $psrStreamBride = new StreamFactory();
+
+        $this->instance->instance
             ->on('request', function
             (
-                Request $request,
-                Response $response
+                SwooleRequest $request,
+                SwooleResponse $response
+            ) use
+            (
+                $routerApp,
+                $psrResponseBride,
+                $psrRequestBridge,
+                $psrStreamBride
             ) {
 
+            // ? Bridge Swoole Request
+            $bridgeRequest = $psrRequestBridge->connectRequest($request);
+
             // ? Server Loader
-            Main::load(
-                Main::dispatch($request->server["request_method"], $request->server["request_uri"]),
+            $routerApp->load(
+                $routerApp->dispatch($bridgeRequest->getMethod(), $bridgeRequest->getUri()->getPath()),
+                $psrRequestBridge,
+                $psrStreamBride,
+                $bridgeRequest,
+                $psrResponseBride,
                 $response
             );
        });
 
-        return new self();
+        return $this;
     }
 
-    public static function run(): void
+    public function run(): void
     {
-        static::$instance->launch();
+        $this->instance->launch();
     }
 }

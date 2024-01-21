@@ -1,0 +1,31 @@
+<?php return array (
+  0 => 
+  array (
+    'GET' => 
+    array (
+      '/api/' => 
+      array (
+        0 => 'Xel\\Async\\test\\service\\Service',
+        1 => 'index',
+      ),
+      '/api/data' => 
+      array (
+        0 => 'Xel\\Async\\test\\service\\Service',
+        1 => 'sample',
+      ),
+      '/api/test' => 
+      array (
+        0 => 'Xel\\Async\\test\\service\\hello',
+        1 => 'index',
+      ),
+      '/api/bro' => 
+      array (
+        0 => 'Xel\\Async\\test\\service\\hello',
+        1 => 'sample',
+      ),
+    ),
+  ),
+  1 => 
+  array (
+  ),
+);

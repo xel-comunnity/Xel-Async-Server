@@ -7,6 +7,8 @@ use FastRoute\RouteCollector;
 use HttpSoft\Message\ResponseFactory;
 use HttpSoft\Message\StreamFactory;
 use InvalidArgumentException;
+use Psr\Http\Message\MessageInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use ReflectionException;
 use Swoole\Http\Response as SwooleResponse;
@@ -110,8 +112,7 @@ class Main
                 $response->status('405', "NOT ALLOWED");
                 break;
             case Dispatcher::FOUND:
-                $res = $responseFactory->createResponse()->withBody($streamFactory->createStream($this->generateInstance($routeInfo[1], $routeInfo[2])));
-                $res = $res->withStatus(200);
+                $res = $this->generateInstance($routeInfo[1], $routeInfo[2]);
                 $psrFactory->connectResponse($res, $response);
                 break;
         }
@@ -120,9 +121,9 @@ class Main
     /**
      * @param array{string, string} $handler
      * @param array{mixed} $vars
-     * @return string
+     * @return MessageInterface|ResponseInterface
      */
-    private function generateInstance(array $handler, array $vars):string
+    private function generateInstance(array $handler, array $vars):MessageInterface|ResponseInterface
     {
         // ? Ensure that $handler is an array and has at least two elements
         if (count($handler) >= 2) {
@@ -143,7 +144,6 @@ class Main
                     }
 
                     // ? Ensure that $instance is an object before calling the method
-                    /** @var callable $object */
                     return call_user_func_array($object, $this->param);
                 } else {
                     throw new InvalidArgumentException('Invalid method name');

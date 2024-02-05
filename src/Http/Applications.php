@@ -1,13 +1,9 @@
 <?php
 namespace Xel\Async\Http;
 
-use HttpSoft\Message\ServerRequestFactory;
-use HttpSoft\Message\StreamFactory;
-use HttpSoft\Message\UploadedFileFactory;
-use HttpSoft\Message\ResponseFactory;
-use ReflectionException;
 use Swoole\Http\Request as SwooleRequest;
 use Swoole\Http\Response as SwooleResponse;
+use Xel\Async\Http\Container\Register as DI;
 use Xel\Async\Http\Server\Servers;
 use Xel\Async\Router\Main;
 use Xel\Psr7bridge\PsrFactory;
@@ -28,52 +24,32 @@ class Applications
 
     /**
      * @param array<string, mixed> $loader
+     * @param DI $register
      * @return self
-     * @throws ReflectionException
      */
-    public function onEvent(array $loader): self
+    public function onEvent(array $loader, DI $register): self
     {
+        // ? initial Psr Bridge Http Request & Response
+        $psrBridge = new PsrFactory($register);
+
         // ? initial loader for dynamic router
-        $routerApp =  (new Main())($loader);
-
-        // ? initial Psr Bridge for Http Request & Response
-        $psrRequestBridge = new PsrFactory(
-            new ServerRequestFactory(),
-            new StreamFactory(),
-            new UploadedFileFactory()
-        );
-
-        $psrResponseBride = new ResponseFactory();
-
-        $psrStreamBride = new StreamFactory();
+        $router = new Main($register, $psrBridge);
 
         $this->instance->instance
             ->on('request', function
             (
                 SwooleRequest $request,
                 SwooleResponse $response
-            ) use
-            (
-                $routerApp,
-                $psrResponseBride,
-                $psrRequestBridge,
-                $psrStreamBride
-            ) {
+            )use ($loader, $psrBridge, $router){
 
-            // ? Bridge Swoole Request
-            $bridgeRequest = $psrRequestBridge->connectRequest($request);
+                // ? Bridge Swoole Http Request
+                $req = $psrBridge->connectRequest($request);
 
-            // ? Server Loader
-            $routerApp->load(
-                $routerApp->dispatch($bridgeRequest->getMethod(), $bridgeRequest->getUri()->getPath()),
-                $psrRequestBridge,
-                $psrStreamBride,
-                $bridgeRequest,
-                $psrResponseBride,
-                $response
-            );
+                // ? Router Dynamic Loader
+                $router
+                    ->routerMapper($loader,$req->getMethod(),$req->getUri()->getPath())
+                    ->Execute($req, $response);
        });
-
         return $this;
     }
 

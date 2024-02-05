@@ -1,7 +1,6 @@
 <?php
 
 namespace Xel\Async\test\service;
-use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\ResponseInterface;
 use Xel\Async\Http\Response;
 use Xel\Async\Router\Attribute\GET;
@@ -9,13 +8,13 @@ use Xel\Async\Router\Attribute\GET;
 class hello
 {
     #[GET("/test")]
-    public function index(): MessageInterface|ResponseInterface
+    public function index():ResponseInterface
     {
         return Response::create()->withError(['Error' => "can't access this page "], 403);
     }
 
     #[GET("/bro")]
-    public function sample(): MessageInterface|ResponseInterface
+    public function sample():ResponseInterface
     {
         $data = [
             "value","value","value","value","value","value","value","value","value",
@@ -679,6 +678,7 @@ class hello
             "value","value","value","value","value","value","value","value","value",
 
         ];
+
         return Response::create()->json($data, 201);
     }
 }

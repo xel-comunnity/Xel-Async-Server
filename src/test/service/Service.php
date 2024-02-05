@@ -1,20 +1,24 @@
 <?php
 namespace Xel\Async\test\service;
-use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Xel\Async\Router\Attribute\GET;
+use Xel\Async\Router\Attribute\POST;
 use Xel\Async\Http\Response;
+
 class Service
 {
-    #[GET("/")]
-    public function index(): MessageInterface|ResponseInterface
+    #[POST("/datas")]
+    public function index(ServerRequestInterface $request, Response $response): ResponseInterface
     {
-        return Response::create()->json(['helloWorld'],201);
+        $data = ["message" => "success"];
+        return $response->json($data, 200);
     }
 
-    #[GET("/data")]
-    public function sample(): MessageInterface|ResponseInterface
+    #[GET("/data1")]
+    public function sample(ServerRequestInterface $request, Response $response): ResponseInterface
     {
-        return Response::create()->json(['helloThere'],201);
+       $data = ["message" => "hello xel"];
+        return $response->json($data, 200);
     }
 }

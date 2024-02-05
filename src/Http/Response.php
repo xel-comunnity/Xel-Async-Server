@@ -2,50 +2,82 @@
 
 namespace Xel\Async\Http;
 use HttpSoft\Message\ResponseFactory;
-use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\ResponseInterface;
 use HttpSoft\Message\StreamFactory;
+use Xel\Async\Http\Container\Register;
 
 final class Response
 {
-    private ResponseInterface $responseFactory;
-    private StreamFactory $streamFactory;
+    private ?ResponseFactory $responseFactory = null;
+    private ?StreamFactory $streamFactory = null;
+    private Register $register;
 
     public function __construct()
     {
-        $this->responseFactory = (new ResponseFactory())->createResponse();
-        $this->streamFactory = new StreamFactory();
     }
 
-    public static function create(): Response
+    public function __invoke(Register $register): Response
     {
-        return new self();
+        $this->register = $register;
+        return $this;
     }
 
-    public function json(array $data, int $status, bool $print = false): MessageInterface|ResponseInterface
+    private function lazyStreamFactory()
+    {
+        if ($this->streamFactory === null){
+            $this->streamFactory = $this->register->get('StreamFactory');
+        }
+        return $this->streamFactory;
+    }
+
+    private function lazyResponseFactory()
+    {
+        if ($this->responseFactory === null){
+            $this->responseFactory = $this->register->get('ResponseFactory');
+        }
+        return $this->responseFactory->createResponse();
+    }
+
+
+    /**
+     * @param array<string|int, mixed> $data
+     * @param int $status
+     * @param bool $print
+     * @return ResponseInterface
+     */
+    public function json(array $data, int $status, bool $print = false):ResponseInterface
     {
         $check = $print ? json_encode($data, JSON_PRETTY_PRINT) : json_encode($data);
-        $body = $this->streamFactory->createStream($check);
-
-        return $this->responseFactory
+        $body = $this->lazystreamFactory()->createStream($check);
+        return $this->lazyresponseFactory()
             ->withBody($body)
             ->withHeader('Content-Type', 'application/json')
             ->withStatus($status);
     }
 
-    public function plain(string $data, int $status): MessageInterface|ResponseInterface
+    /**
+     * @param string $data
+     * @param int $status
+     * @return ResponseInterface
+     */
+    public function plain(string $data, int $status): ResponseInterface
     {
-        $body = $this->streamFactory->createStream($data);
-        return $this->responseFactory
+        $body = $this->lazystreamFactory()->createStream($data);
+        return $this->lazyresponseFactory()
             ->withBody($body)
             ->withHeader('Content-Type', 'text/plain')
             ->withStatus($status);
     }
 
+    /**
+     * @param array<string|int, mixed> $errorMessage
+     * @param int $status
+     * @return ResponseInterface
+     */
     public function withError(array $errorMessage, int $status): ResponseInterface
     {
-        $body = $this->streamFactory->createStream(json_encode($errorMessage));
-        return $this->responseFactory
+        $body = $this->lazystreamFactory()->createStream(json_encode($errorMessage));
+        return $this->lazyresponseFactory()
             ->withBody($body)
             ->withHeader('Content-Type', 'application/json')
             ->withStatus($status);

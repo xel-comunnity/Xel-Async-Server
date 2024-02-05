@@ -1,110 +1,55 @@
 <?php
 
 namespace Xel\Async\Router;
-
 use FastRoute\Dispatcher;
+use FastRoute\Dispatcher\Result\Matched;
+use FastRoute\Dispatcher\Result\MethodNotAllowed;
+use FastRoute\Dispatcher\Result\NotMatched;
 use FastRoute\RouteCollector;
-use HttpSoft\Message\ResponseFactory;
-use HttpSoft\Message\StreamFactory;
 use InvalidArgumentException;
-use Psr\Http\Message\MessageInterface;
-use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use ReflectionException;
-use Swoole\Http\Response as SwooleResponse;
-use Xel\Async\Router\Attribute\Extract\Extractor;
+use Swoole\Http\Response;
+use Xel\Async\Http\Container\Register;
 use Xel\Psr7bridge\PsrFactory;
-use function FastRoute\cachedDispatcher;
+use Xel\Async\Http\Response as XelResponse;
+use function FastRoute\simpleDispatcher;
 
 class Main
 {
-    /**
-     * @var Dispatcher
-     */
-    private Dispatcher $dispatcher;
+    private Matched|MethodNotAllowed|NotMatched $dispatch;
 
-    /**
-     * @var array<string|int|false, mixed>
-     */
-    private array $param = [];
+    public function __construct(
+        private readonly Register   $register,
+        private readonly PsrFactory $psrFactory,
+    )
+    {}
 
-    /**
-     * @param array<string, mixed> $loader
-     * @return Main
-     * @throws ReflectionException
-     */
-    public function __invoke(array $loader): self
+    private function responseInterface(): XelResponse
     {
-      // ? inject to Loader
-      $inLoader = (new Extractor())->setLoader($loader);
+        /** @var XelResponse $instance */
+        clone  $instance =  $this->register->get('ResponseInterface');
+        return $instance($this->register);
+    }
 
-      // encode json
-      $data = json_encode($loader);
-
-      // Check if encoding was successful
-      if ($data === false) {
-        echo 'JSON encoding failed!';
-        return $this;
-      }
-      // ? make hash
-      $hashRoute =  hash('sha256', $data);
-
-      // ? get instance tmp cache
-      $cache_key = 'xel_route_cache'. $hashRoute;
-
-      $cache_dir = __DIR__.'/../../src/test/cache/'.$cache_key;
-      $this->dispatcher = cachedDispatcher(function (RouteCollector $routeCollector) use ($inLoader, $loader){
-        $routeCollector->addGroup('/api', function (RouteCollector $r) use ($inLoader, $loader){
-            foreach ($inLoader as $item){
-                $class = $item['Class'];
-                $method = $item['Method'];
-                // ? check the class in exist or not
-                if (in_array($class, $loader,true)){
+    public function routerMapper(array $loader, string $method, string $uri): static
+    {
+        $dispatch = simpleDispatcher(function (RouteCollector $routeCollector) use ($loader){
+            $routeCollector->addGroup('/api', function (RouteCollector $r) use ($loader){
+                foreach ($loader as $item){
+                    $class = $item['Class'];
+                    $method = $item['Method'];
                     $r->addRoute($item['RequestMethod'], $item['Uri'], [$class, $method]);
-                }else {
-                    // ? Handle unknown class
-                    echo "Unknown class: $class\n";
                 }
-            }
+            });
         });
-      }, [
-          'cacheDisabled' => false,
-          'cacheKey' => $cache_dir
 
-      ]);
-      return $this;
+        $this->dispatch = $dispatch->dispatch($method, $uri);
+        return $this;
     }
 
-    /**
-     * @param string $method
-     * @param string $uri
-     * @return Dispatcher\Result\Matched|Dispatcher\Result\MethodNotAllowed|Dispatcher\Result\NotMatched
-     */
-    public function dispatch(string $method, string $uri): Dispatcher\Result\Matched|Dispatcher\Result\MethodNotAllowed|Dispatcher\Result\NotMatched
+    public function execute(ServerRequestInterface $request, Response $response): void
     {
-        return $this->dispatcher->dispatch($method,$uri);
-    }
-
-    /**
-     * @param Dispatcher\Result\Matched|Dispatcher\Result\NotMatched|Dispatcher\Result\MethodNotAllowed $routeInfo
-     * @param PsrFactory $psrFactory
-     * @param StreamFactory $streamFactory
-     * @param ServerRequestInterface $requestFactory
-     * @param ResponseFactory $responseFactory
-     * @param SwooleResponse $response
-     * @return void
-     */
-    public function load
-    (
-        Dispatcher\Result\Matched|Dispatcher\Result\NotMatched|Dispatcher\Result\MethodNotAllowed $routeInfo,
-        PsrFactory             $psrFactory,
-        StreamFactory          $streamFactory,
-        ServerRequestInterface $requestFactory,
-        ResponseFactory        $responseFactory,
-        SwooleResponse         $response
-    ): void
-    {
-        switch ($routeInfo[0]) {
+        switch ($this->dispatch[0]) {
             case Dispatcher::NOT_FOUND:
                 $response->status('404', "NOT FOUND");
                 break;
@@ -112,47 +57,43 @@ class Main
                 $response->status('405', "NOT ALLOWED");
                 break;
             case Dispatcher::FOUND:
-                $res = $this->generateInstance($routeInfo[1], $routeInfo[2]);
-                $psrFactory->connectResponse($res, $response);
-                break;
+                $this->createRouterInstance($request, $response);
         }
     }
 
-    /**
-     * @param array{string, string} $handler
-     * @param array{mixed} $vars
-     * @return MessageInterface|ResponseInterface
-     */
-    private function generateInstance(array $handler, array $vars):MessageInterface|ResponseInterface
+    private function createRouterInstance(ServerRequestInterface $request, Response $response): void
     {
-        // ? Ensure that $handler is an array and has at least two elements
-        if (count($handler) >= 2) {
-            $class = $handler[0];
-            $method = $handler[1];
+        [$class,$method] = $this->dispatch[1];
+        $vars = $this->dispatch[2];
 
-            // ? Check if $class is a valid class name
-            if (class_exists($class)) {
-                // ? Check if $method is a valid method of $class
-                if (method_exists($class, $method)) {
-                    // ? Create an instance of $class
-                    $instance = new $class();
-                    $object = [$instance, $method];
+        $param = [];
 
-                    // ? Inject response as param to handle return value
-                    foreach ($vars as $value) {
-                        $this->param[] = $value;
-                    }
-
-                    // ? Ensure that $instance is an object before calling the method
-                    return call_user_func_array($object, $this->param);
-                } else {
-                    throw new InvalidArgumentException('Invalid method name');
-                }
-            } else {
-                throw new InvalidArgumentException('Invalid class name');
-            }
-        } else {
-            throw new InvalidArgumentException('Invalid $handler array structure');
+        if (!class_exists($class)) {
+            throw new InvalidArgumentException('Invalid class name');
         }
+
+        if (!method_exists($class, $method)) {
+            throw new InvalidArgumentException('Invalid method name');
+        }
+
+        // ? Create an instance of $class
+        $instance = new $class();
+        $object = [$instance, $method];
+        /**
+         * Injecting Request and Response Interface
+         */
+
+        $param[] = $request;
+        $param[] = $this->responseInterface();
+
+        // ? Inject response as param to handle return value
+        foreach ($vars as $value) {
+            $param[] = $value;
+        }
+
+        // ? Ensure that $instance is an object before calling the method
+        /** @var callable $object */
+        $responseData = call_user_func_array($object, $param);
+        $this->psrFactory->connectResponse($responseData, $response);
     }
 }

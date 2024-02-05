@@ -1,7 +1,7 @@
 # phpstan.neon
 
 parameters:
-    level: 8
+    level:
     paths:
         - src
     treatPhpDocTypesAsCertain: false

@@ -5,7 +5,12 @@
     "autoload": {
         "psr-4": {
             "Xel\\Async\\": "src/"
-        }
+        },
+        "files": [
+            "src/Http/Utility/Files.php",
+            "src/Http/Utility/RequestChecker.php",
+            "src/Router/Attribute/Generate/GenerateReflectionClass.php"
+        ]
     },
     "authors": [
         {
@@ -13,6 +18,7 @@
             "email": "yogipratama.ut@gmail.com"
         }
     ],
+
     "minimum-stability": "dev",
     "require": {
         "php": ">=8.2",

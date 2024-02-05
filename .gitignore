@@ -4,3 +4,5 @@ public
 devise
 config
 .idea
+src/test
+src/Exception

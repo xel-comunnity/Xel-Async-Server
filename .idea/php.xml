@@ -20,6 +20,7 @@
       <path value="$PROJECT_DIR$/vendor/dflydev/fig-cookies" />
       <path value="$PROJECT_DIR$/vendor/psr/http-factory" />
       <path value="$PROJECT_DIR$/vendor/httpsoft/http-message" />
+      <path value="$PROJECT_DIR$/vendor/psr/simple-cache" />
     </include_path>
   </component>
   <component name="PhpProjectSharedConfiguration" php_language_level="8.2" />

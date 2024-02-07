@@ -9,7 +9,9 @@
         "files": [
             "src/Http/Utility/Files.php",
             "src/Http/Utility/RequestChecker.php",
-            "src/Router/Attribute/Generate/GenerateReflectionClass.php"
+            "src/Router/Attribute/Generate/GenerateReflectionClass.php",
+            "src/test/Service/serviceRegister.php",
+            "src/test/config/Boot.php"
         ]
     },
     "authors": [
@@ -22,7 +24,8 @@
     "require": {
         "php": ">=8.2",
         "xel/psr7bridge": ">=0.1.2",
-        "nikic/fast-route": "2.0.x-dev@dev"
+        "nikic/fast-route": "2.0.x-dev@dev",
+        "xel/container": "dev-main"
     },
     "require-dev": {
         "phpstan/phpstan": "2.0.x-dev"

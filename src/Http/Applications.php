@@ -1,9 +1,9 @@
 <?php
 namespace Xel\Async\Http;
 
+use DI\Container;
 use Swoole\Http\Request as SwooleRequest;
 use Swoole\Http\Response as SwooleResponse;
-use Xel\Async\Http\Container\Register as DI;
 use Xel\Async\Http\Server\Servers;
 use Xel\Async\Router\Main;
 use Xel\Psr7bridge\PsrFactory;
@@ -24,14 +24,13 @@ class Applications
 
     /**
      * @param array<string, mixed> $loader
-     * @param DI $register
+     * @param Container $register
      * @return self
      */
-    public function onEvent(array $loader, DI $register): self
+    public function onEvent(array $loader,  Container $register): self
     {
         // ? initial Psr Bridge Http Request & Response
         $psrBridge = new PsrFactory($register);
-
         // ? initial loader for dynamic router
         $router = new Main($register, $psrBridge);
 
@@ -40,7 +39,7 @@ class Applications
             (
                 SwooleRequest $request,
                 SwooleResponse $response
-            )use ($loader, $psrBridge, $router){
+            ) use ($loader, $psrBridge, $router){
 
                 // ? Bridge Swoole Http Request
                 $req = $psrBridge->connectRequest($request);

@@ -1,36 +1,36 @@
 <?php
 
-use HttpSoft\Message\ResponseFactory;
-use HttpSoft\Message\ServerRequestFactory;
-use HttpSoft\Message\StreamFactory;
-use HttpSoft\Message\UploadedFileFactory;
+use DI\ContainerBuilder;
 use Xel\Async\Http\Applications;
-use Xel\Async\Http\Response;
+use Xel\Container\Dock;
 use function Xel\Async\Router\Attribute\Generate\loadCachedClass;
 use function Xel\Async\Router\Attribute\Generate\loaderClass;
-
+use function Xel\Async\test\config\entryLoader;
 require_once __DIR__ . "/../../vendor/autoload.php";
-$config = require __DIR__ . "/config/config.php";
-$service = require __DIR__."/service/serviceRegister.php";
-
-/**
- * Register Container
- */
-$register = new Xel\Async\Http\Container\Register();
-$register->register('ServerFactory', ServerRequestFactory::class);
-$register->register('StreamFactory', StreamFactory::class);
-$register->register('UploadFactory', UploadedFileFactory::class);
-$register->register("ResponseFactory", ResponseFactory::class);
-$register->register('ResponseInterface', Response::class);
-
-/**
- * Class Cache Loader
- *
- */
-$path = __DIR__."/../test/cache";
 
 try {
-    loaderClass($service, $path);
+
+    /**
+     * Register Container
+     */
+    $DIContainer = new ContainerBuilder();
+    $xelContainer = new Xel\Container\XelContainer($DIContainer);
+    $Dock = new Dock($xelContainer, entryLoader());
+    $container = $Dock->launch();
+    $Class = $container->get('ServiceDock');
+
+    /**
+     * Server config
+     */
+    $Config = $container->get('server');
+
+    /**
+     * Class Cache Loader
+     *
+     */
+    $path = __DIR__."/../test/cache";
+
+    loaderClass($Class, $path);
     $cacheClass = loadCachedClass($path);
 
     /**
@@ -38,8 +38,8 @@ try {
      */
     $app = new Applications();
     $app
-        ->initialize($config)
-        ->onEvent($cacheClass, $register)
+        ->initialize($Config)
+        ->onEvent($cacheClass, $container)
         ->run();
 
 } catch (ReflectionException $e) {

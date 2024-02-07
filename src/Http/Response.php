@@ -1,6 +1,7 @@
 <?php
 
 namespace Xel\Async\Http;
+use DI\Container;
 use HttpSoft\Message\ResponseFactory;
 use Psr\Http\Message\ResponseInterface;
 use HttpSoft\Message\StreamFactory;
@@ -10,13 +11,13 @@ final class Response
 {
     private ?ResponseFactory $responseFactory = null;
     private ?StreamFactory $streamFactory = null;
-    private Register $register;
+    private Container $register;
 
     public function __construct()
     {
     }
 
-    public function __invoke(Register $register): Response
+    public function __invoke(Container $register): Response
     {
         $this->register = $register;
         return $this;

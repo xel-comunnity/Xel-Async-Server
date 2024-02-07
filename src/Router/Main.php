@@ -1,6 +1,9 @@
 <?php
 
 namespace Xel\Async\Router;
+use DI\Container;
+use DI\DependencyException;
+use DI\NotFoundException;
 use FastRoute\Dispatcher;
 use FastRoute\Dispatcher\Result\Matched;
 use FastRoute\Dispatcher\Result\MethodNotAllowed;
@@ -9,7 +12,6 @@ use FastRoute\RouteCollector;
 use InvalidArgumentException;
 use Psr\Http\Message\ServerRequestInterface;
 use Swoole\Http\Response;
-use Xel\Async\Http\Container\Register;
 use Xel\Psr7bridge\PsrFactory;
 use Xel\Async\Http\Response as XelResponse;
 use function FastRoute\simpleDispatcher;
@@ -19,7 +21,7 @@ class Main
     private Matched|MethodNotAllowed|NotMatched $dispatch;
 
     public function __construct(
-        private readonly Register   $register,
+        private readonly Container  $register,
         private readonly PsrFactory $psrFactory,
     )
     {}
@@ -47,6 +49,10 @@ class Main
         return $this;
     }
 
+    /**
+     * @throws DependencyException
+     * @throws NotFoundException
+     */
     public function execute(ServerRequestInterface $request, Response $response): void
     {
         switch ($this->dispatch[0]) {
@@ -61,6 +67,10 @@ class Main
         }
     }
 
+    /**
+     * @throws DependencyException
+     * @throws NotFoundException
+     */
     private function createRouterInstance(ServerRequestInterface $request, Response $response): void
     {
         [$class,$method] = $this->dispatch[1];
@@ -79,12 +89,12 @@ class Main
         // ? Create an instance of $class
         $instance = new $class();
         $object = [$instance, $method];
+
         /**
          * Injecting Request and Response Interface
          */
-
-        $param[] = $request;
-        $param[] = $this->responseInterface();
+        $instance->setRequest($request);
+        $instance->setResponse($this->responseInterface());
 
         // ? Inject response as param to handle return value
         foreach ($vars as $value) {

@@ -23,7 +23,7 @@
         "php": ">=8.2",
         "xel/psr7bridge": ">=0.1.2",
         "nikic/fast-route": "2.0.x-dev@dev",
-        "xel/container": "*"
+        "xel/container": "dev-main"
     },
     "require-dev": {
         "phpstan/phpstan": "2.0.x-dev"

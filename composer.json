@@ -9,9 +9,7 @@
         "files": [
             "src/Http/Utility/Files.php",
             "src/Http/Utility/RequestChecker.php",
-            "src/Router/Attribute/Generate/GenerateReflectionClass.php",
-            "src/test/Service/serviceRegister.php",
-            "src/test/config/Boot.php"
+            "src/Router/Attribute/Generate/GenerateReflectionClass.php"
         ]
     },
     "authors": [

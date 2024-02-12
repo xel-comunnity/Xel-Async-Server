@@ -40,7 +40,6 @@ class Applications
                 SwooleRequest $request,
                 SwooleResponse $response
             ) use ($loader, $psrBridge, $router){
-
                 // ? Bridge Swoole Http Request
                 $req = $psrBridge->connectRequest($request);
 

@@ -7,8 +7,8 @@ use Attribute;
 #[Attribute(Attribute::TARGET_METHOD|Attribute::IS_REPEATABLE)]
 class PUT extends Router
 {
-    public function __construct(string $path)
+    public function __construct(string $path, array $middleware = [])
     {
-        parent::__construct('PUT', $path);
+        parent::__construct('PUT', $path, $middleware);
     }
 }

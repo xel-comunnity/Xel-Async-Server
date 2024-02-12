@@ -11,7 +11,8 @@ class Router implements RouteAPP
     public function __construct
     (
         private string $httpMethod,
-        private string $path
+        private string $path,
+        private array $middlewares = []
 
     ){}
 
@@ -28,5 +29,10 @@ class Router implements RouteAPP
     public function getMethod(): string
     {
         return strtoupper($this->httpMethod);
+    }
+
+    public function getMiddlewares(): array
+    {
+        return $this->middlewares;
     }
 }

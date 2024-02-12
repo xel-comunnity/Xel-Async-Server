@@ -6,17 +6,19 @@ use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionException;
 use RuntimeException;
+use Xel\Async\Router\Attribute\Middlewares;
 use Xel\Async\Router\Attribute\Router;
 
 const CACHE_NAME = "class.cache";
-/**
- * @throws ReflectionException
- */
+
+
 function loaderClass(array $loader, string $cachePath): void
 {
     try {
         if (!file_exists(CACHE_NAME)){
             $class = extractClass($loader);
+
+            // ? CacheAble
             generateCacheClass($class, $cachePath);
         }
     } catch (RuntimeException $exception) {
@@ -26,9 +28,7 @@ function loaderClass(array $loader, string $cachePath): void
     }
 }
 
-/**
- * @throws ReflectionException
- */
+
 function extractClass(array $loader): array
 {
     $param = [];
@@ -37,10 +37,12 @@ function extractClass(array $loader): array
             $reflection = new ReflectionClass($value);
             $methods = $reflection->getMethods();
 
+            $middlewareClass = extractMiddlewareClass($reflection);
             foreach ($methods as $method) {
                 $attr = $method->getAttributes(Router::class, ReflectionAttribute::IS_INSTANCEOF);
-
                 foreach ($attr as $attribute) {
+
+                    /**@var Router $getAttrInstance*/
                     $getAttrInstance = $attribute->newInstance();
                     $getMethod = $method->getName();
 
@@ -49,6 +51,7 @@ function extractClass(array $loader): array
                         "RequestMethod" => $getAttrInstance->getMethod(),
                         "Class" => $value,
                         "Method" => $getMethod,
+                        "Middlewares" => array_merge($middlewareClass, $getAttrInstance->getMiddlewares())
                     ];
 
                     $param[] = $tmp;
@@ -62,6 +65,10 @@ function extractClass(array $loader): array
     return $param;
 
 }
+
+/**
+ * Cache Class Generator
+ */
 function generateCacheClass(array $class, string $path): void
 {
     try {
@@ -69,20 +76,6 @@ function generateCacheClass(array $class, string $path): void
     } catch (RuntimeException $exception) {
         // Print a message (you might want to log it instead in a real-world scenario)
         echo 'Exception in generateCacheClass: ' . $exception->getMessage() . PHP_EOL;
-
-    }}
-
-/**
- * @throws ReflectionException
- */
-function renewClass(array $loader, string $cachePath): void
-{
-    try {
-        $class = extractClass($loader);
-        generateCacheClass($class, $cachePath);
-    } catch (RuntimeException $exception) {
-        // Print a message (you might want to log it instead in a real-world scenario)
-        echo 'Exception in renewClass: ' . $exception->getMessage() . PHP_EOL;
     }
 }
 
@@ -100,5 +93,36 @@ function loadCachedClass(string $cachePath): array|null
         echo 'Exception: ' . $exception->getMessage() . PHP_EOL;
     }
     return null;
+}
+
+/**
+ */
+function renewClass(array $loader, string $cachePath): void
+{
+    try {
+        $class = extractClass($loader);
+        generateCacheClass($class, $cachePath);
+    } catch (RuntimeException $exception) {
+        // Print a message (you might want to log it instead in a real-world scenario)
+        echo 'Exception in renewClass: ' . $exception->getMessage() . PHP_EOL;
+    }
+}
+
+/**
+ * Middlewares Section
+ */
+
+function extractMiddlewareClass(ReflectionClass $reflectionClass): array
+{
+    $data = $reflectionClass->getAttributes();
+    $middleware = [];
+    foreach ($data as $attribute){
+        /**@var Middlewares $param*/
+        $param = $attribute->newInstance();
+        $middleware = $param->getMiddlewareClass();
+
+
+    }
+    return $middleware;
 }
 

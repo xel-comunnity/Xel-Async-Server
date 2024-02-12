@@ -2,19 +2,18 @@
 
 namespace Xel\Async\Http;
 use DI\Container;
-use HttpSoft\Message\ResponseFactory;
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Nyholm\Psr7\Stream;
 use Psr\Http\Message\ResponseInterface;
-use HttpSoft\Message\StreamFactory;
-use Xel\Async\Http\Container\Register;
 
 final class Response
 {
-    private ?ResponseFactory $responseFactory = null;
-    private ?StreamFactory $streamFactory = null;
+    private ?ResponseInterface $responseFactory = null;
     private Container $register;
 
     public function __construct()
     {
+
     }
 
     public function __invoke(Container $register): Response
@@ -23,20 +22,14 @@ final class Response
         return $this;
     }
 
-    private function lazyStreamFactory()
-    {
-        if ($this->streamFactory === null){
-            $this->streamFactory = $this->register->get('StreamFactory');
-        }
-        return $this->streamFactory;
-    }
-
-    private function lazyResponseFactory()
+    private function lazyResponseFactory(): ?ResponseInterface
     {
         if ($this->responseFactory === null){
-            $this->responseFactory = $this->register->get('ResponseFactory');
+            /** @var Psr17Factory $responseFactory */
+            $responseFactory = $this->register->get('ResponseFactory');
+            $this->responseFactory = $responseFactory->createResponse();
         }
-        return $this->responseFactory->createResponse();
+        return $this->responseFactory;
     }
 
 
@@ -49,9 +42,8 @@ final class Response
     public function json(array $data, int $status, bool $print = false):ResponseInterface
     {
         $check = $print ? json_encode($data, JSON_PRETTY_PRINT) : json_encode($data);
-        $body = $this->lazystreamFactory()->createStream($check);
         return $this->lazyresponseFactory()
-            ->withBody($body)
+            ->withBody(Stream::create($check))
             ->withHeader('Content-Type', 'application/json')
             ->withStatus($status);
     }
@@ -63,9 +55,8 @@ final class Response
      */
     public function plain(string $data, int $status): ResponseInterface
     {
-        $body = $this->lazystreamFactory()->createStream($data);
         return $this->lazyresponseFactory()
-            ->withBody($body)
+            ->withBody(Stream::create($data))
             ->withHeader('Content-Type', 'text/plain')
             ->withStatus($status);
     }
@@ -77,9 +68,8 @@ final class Response
      */
     public function withError(array $errorMessage, int $status): ResponseInterface
     {
-        $body = $this->lazystreamFactory()->createStream(json_encode($errorMessage));
         return $this->lazyresponseFactory()
-            ->withBody($body)
+            ->withBody(Stream::create($errorMessage))
             ->withHeader('Content-Type', 'application/json')
             ->withStatus($status);
     }

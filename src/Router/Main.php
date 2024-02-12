@@ -2,23 +2,19 @@
 
 namespace Xel\Async\Router;
 use DI\Container;
-use DI\DependencyException;
-use DI\NotFoundException;
 use FastRoute\Dispatcher;
-use FastRoute\Dispatcher\Result\Matched;
-use FastRoute\Dispatcher\Result\MethodNotAllowed;
-use FastRoute\Dispatcher\Result\NotMatched;
 use FastRoute\RouteCollector;
-use InvalidArgumentException;
 use Psr\Http\Message\ServerRequestInterface;
 use Swoole\Http\Response;
+use Xel\Async\Middleware\Runner;
+use Xel\Async\test\Service\Auth;
 use Xel\Psr7bridge\PsrFactory;
 use Xel\Async\Http\Response as XelResponse;
 use function FastRoute\simpleDispatcher;
 
 class Main
 {
-    private Matched|MethodNotAllowed|NotMatched $dispatch;
+    private array $dispatch;
 
     public function __construct(
         private readonly Container  $register,
@@ -33,26 +29,36 @@ class Main
         return $instance($this->register);
     }
 
+    private function routerRunner(): RouterRunner
+    {
+        /** @var RouterRunner $runner */
+        $runner = $this->register->get("RouterRunner");
+        return $runner;
+    }
+
+    private function globalMiddleware(): array
+    {
+        /** @var array $globalMiddleware */
+        $globalMiddleware = $this->register->get("GlobalMiddleware");
+        return $globalMiddleware;
+    }
+
     public function routerMapper(array $loader, string $method, string $uri): static
     {
-        $dispatch = simpleDispatcher(function (RouteCollector $routeCollector) use ($loader){
+        $router = simpleDispatcher(function (RouteCollector $routeCollector) use ($loader){
             $routeCollector->addGroup('/api', function (RouteCollector $r) use ($loader){
                 foreach ($loader as $item){
                     $class = $item['Class'];
                     $method = $item['Method'];
-                    $r->addRoute($item['RequestMethod'], $item['Uri'], [$class, $method]);
+                    $r->addRoute($item['RequestMethod'], $item['Uri'], [$class, $method, $item["Middlewares"]]);
                 }
             });
         });
 
-        $this->dispatch = $dispatch->dispatch($method, $uri);
+        $this->dispatch = $router->dispatch($method, $uri);
         return $this;
     }
 
-    /**
-     * @throws DependencyException
-     * @throws NotFoundException
-     */
     public function execute(ServerRequestInterface $request, Response $response): void
     {
         switch ($this->dispatch[0]) {
@@ -63,47 +69,23 @@ class Main
                 $response->status('405', "NOT ALLOWED");
                 break;
             case Dispatcher::FOUND:
-                $this->createRouterInstance($request, $response);
+                // ? Router Dispatch
+                $res = $this->routerRunner()(
+                    $request,
+                    $this->responseInterface(),
+                    $this->dispatch
+                );
+
+                // ? execute middleware stack
+                $middlewares = $this->dispatch[1][2];
+                $mergeMiddleware = array_merge($this->globalMiddleware(),$middlewares);
+
+                $data = new Runner($mergeMiddleware, $res);
+
+                // ? execute router when already run stack of middleware
+                $responses = $data->handle($request);
+                $this->routerRunner()->exec($this->psrFactory, $response, $responses);
         }
     }
 
-    /**
-     * @throws DependencyException
-     * @throws NotFoundException
-     */
-    private function createRouterInstance(ServerRequestInterface $request, Response $response): void
-    {
-        [$class,$method] = $this->dispatch[1];
-        $vars = $this->dispatch[2];
-
-        $param = [];
-
-        if (!class_exists($class)) {
-            throw new InvalidArgumentException('Invalid class name');
-        }
-
-        if (!method_exists($class, $method)) {
-            throw new InvalidArgumentException('Invalid method name');
-        }
-
-        // ? Create an instance of $class
-        $instance = new $class();
-        $object = [$instance, $method];
-
-        /**
-         * Injecting Request and Response Interface
-         */
-        $instance->setRequest($request);
-        $instance->setResponse($this->responseInterface());
-
-        // ? Inject response as param to handle return value
-        foreach ($vars as $value) {
-            $param[] = $value;
-        }
-
-        // ? Ensure that $instance is an object before calling the method
-        /** @var callable $object */
-        $responseData = call_user_func_array($object, $param);
-        $this->psrFactory->connectResponse($responseData, $response);
-    }
 }

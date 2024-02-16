@@ -7,13 +7,24 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Xel\Async\Http\Response as XelResponse;
 use Swoole\Http\Response as SwooleResponse;
+use Xel\Async\test\Service\AbstractService;
 use Xel\Psr7bridge\PsrFactory;
 
 class RouterRunner
 {
     private ServerRequestInterface $request;
     private XelResponse $xelResponse;
+    /**
+     * @var array<int|string, mixed>
+     */
     private array $dispatch;
+
+    /**
+     * @param ServerRequestInterface $request
+     * @param XelResponse $xelResponse
+     * @param array<int|string, mixed> $dispatch
+     * @return $this
+     */
 
     public function __invoke
     (
@@ -50,8 +61,11 @@ class RouterRunner
         /**
          * Injecting Request and Response Interface
          */
-        $instance->setRequest($this->request);
-        $instance->setResponse($this->xelResponse);
+        if ($instance instanceof AbstractService){
+            $instance->setRequest($this->request);
+            $instance->setResponse($this->xelResponse);
+        }
+
 
         // ? Inject response as param to handle return value
         foreach ($vars as $value) {

@@ -13,7 +13,14 @@ class Runner implements RequestHandlerInterface
 {
     private SplQueue $queue;
 
-    public function __construct(array $middlewares, private readonly RouterRunner $routerRunner)
+    /**
+     * @param array<string, mixed> $middlewares
+     * @param RouterRunner $routerRunner
+     */
+    public function __construct
+    (
+        array $middlewares,
+        private readonly RouterRunner $routerRunner)
     {
         $this->queue = new SplQueue();
         foreach ($middlewares as $middleware) {

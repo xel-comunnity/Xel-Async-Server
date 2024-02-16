@@ -2,22 +2,25 @@
     "name": "xel/asycn",
     "description": "Rebuild HTTP Server Based on Swoole BASE/PROCESS",
     "type": "library",
-    "autoload": {
-        "psr-4": {
-            "Xel\\Async\\": "src/"
-        },
-        "files": [
-            "src/Http/Utility/Files.php",
-            "src/Http/Utility/RequestChecker.php",
-            "src/Router/Attribute/Generate/GenerateReflectionClass.php"
-        ]
-    },
+
     "authors": [
         {
             "name": "bxel07",
             "email": "yogipratama.ut@gmail.com"
         }
     ],
+
+    "autoload": {
+        "psr-4": {
+            "Xel\\Async\\": "src/"
+        },
+        "files": [
+            "src/Router/Attribute/Generate/GenerateReflectionClass.php",
+            "src/test/Service/serviceRegister.php",
+            "src/test/config/config.php",
+            "src/test/config/Boot.php"
+        ]
+    },
 
     "require": {
         "php": ">=8.2",

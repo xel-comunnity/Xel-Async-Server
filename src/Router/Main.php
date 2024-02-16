@@ -2,18 +2,22 @@
 
 namespace Xel\Async\Router;
 use DI\Container;
+use DI\DependencyException;
+use DI\NotFoundException;
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use Psr\Http\Message\ServerRequestInterface;
 use Swoole\Http\Response;
 use Xel\Async\Middleware\Runner;
-use Xel\Async\test\Service\Auth;
 use Xel\Psr7bridge\PsrFactory;
 use Xel\Async\Http\Response as XelResponse;
 use function FastRoute\simpleDispatcher;
 
 class Main
 {
+    /**
+     * @var array<int|string,mixed>
+     */
     private array $dispatch;
 
     public function __construct(
@@ -24,8 +28,8 @@ class Main
 
     private function responseInterface(): XelResponse
     {
-        /** @var XelResponse $instance */
-        clone  $instance =  $this->register->get('ResponseInterface');
+        /**@var  XelResponse $instance */
+        $instance =  $this->register->get('ResponseInterface');
         return $instance($this->register);
     }
 
@@ -36,13 +40,24 @@ class Main
         return $runner;
     }
 
+    /**
+     * @return class-string[]
+     * @throws DependencyException
+     * @throws NotFoundException
+     */
     private function globalMiddleware(): array
     {
-        /** @var array $globalMiddleware */
+        /** @var class-string[] $globalMiddleware */
         $globalMiddleware = $this->register->get("GlobalMiddleware");
         return $globalMiddleware;
     }
 
+    /**
+     * @param array<int|string, mixed> $loader
+     * @param string $method
+     * @param string $uri
+     * @return $this
+     */
     public function routerMapper(array $loader, string $method, string $uri): static
     {
         $router = simpleDispatcher(function (RouteCollector $routeCollector) use ($loader){
@@ -59,6 +74,10 @@ class Main
         return $this;
     }
 
+    /**
+     * @throws DependencyException
+     * @throws NotFoundException
+     */
     public function execute(ServerRequestInterface $request, Response $response): void
     {
         switch ($this->dispatch[0]) {

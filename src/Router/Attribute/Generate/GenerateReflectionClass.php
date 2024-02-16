@@ -12,6 +12,11 @@ use Xel\Async\Router\Attribute\Router;
 const CACHE_NAME = "class.cache";
 
 
+/**
+ * @param class-string[] $loader
+ * @param string $cachePath
+ * @return void
+ */
 function loaderClass(array $loader, string $cachePath): void
 {
     try {
@@ -28,7 +33,10 @@ function loaderClass(array $loader, string $cachePath): void
     }
 }
 
-
+/**
+ * @param class-string[] $loader
+ * @return array<int|string, mixed>
+ */
 function extractClass(array $loader): array
 {
     $param = [];
@@ -68,6 +76,8 @@ function extractClass(array $loader): array
 
 /**
  * Cache Class Generator
+ * @param array<int|string, mixed> $class
+ * @param string $path
  */
 function generateCacheClass(array $class, string $path): void
 {
@@ -80,7 +90,8 @@ function generateCacheClass(array $class, string $path): void
 }
 
 /**
- * @throws ReflectionException
+ * @param string $cachePath
+ * @return array<int|string, mixed>|null
  */
 function loadCachedClass(string $cachePath): array|null
 {
@@ -96,6 +107,9 @@ function loadCachedClass(string $cachePath): array|null
 }
 
 /**
+ * @param class-string[] $loader
+ * @param string $cachePath
+ * @return void
  */
 function renewClass(array $loader, string $cachePath): void
 {
@@ -110,6 +124,8 @@ function renewClass(array $loader, string $cachePath): void
 
 /**
  * Middlewares Section
+ * @param ReflectionClass $reflectionClass
+ * @return class-string[]
  */
 
 function extractMiddlewareClass(ReflectionClass $reflectionClass): array
@@ -119,9 +135,8 @@ function extractMiddlewareClass(ReflectionClass $reflectionClass): array
     foreach ($data as $attribute){
         /**@var Middlewares $param*/
         $param = $attribute->newInstance();
+        /** @phpstan-ignore-next-line*/
         $middleware = $param->getMiddlewareClass();
-
-
     }
     return $middleware;
 }

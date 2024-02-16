@@ -14,6 +14,7 @@ class RouterRunner
 {
     private ServerRequestInterface $request;
     private XelResponse $xelResponse;
+    private string $parentClass;
     /**
      * @var array<int|string, mixed>
      */
@@ -30,12 +31,14 @@ class RouterRunner
     (
         ServerRequestInterface $request,
         XelResponse $xelResponse,
+        string $parentClass,
         array $dispatch
     ): static
     {
        $this->request = $request;
        $this->xelResponse = $xelResponse;
        $this->dispatch = $dispatch;
+       $this->parentClass = $parentClass;
        return $this;
     }
 
@@ -61,7 +64,7 @@ class RouterRunner
         /**
          * Injecting Request and Response Interface
          */
-        if ($instance instanceof AbstractService){
+        if ($instance instanceof $this->parentClass){
             $instance->setRequest($this->request);
             $instance->setResponse($this->xelResponse);
         }

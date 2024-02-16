@@ -88,10 +88,13 @@ class Main
                 $response->status('405', "NOT ALLOWED");
                 break;
             case Dispatcher::FOUND:
+                $abstractClass = $this->register->get("AbstractService");
+
                 // ? Router Dispatch
                 $res = $this->routerRunner()(
                     $request,
                     $this->responseInterface(),
+                    $abstractClass,
                     $this->dispatch
                 );
 

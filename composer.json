@@ -15,10 +15,7 @@
             "Xel\\Async\\": "src/"
         },
         "files": [
-            "src/Router/Attribute/Generate/GenerateReflectionClass.php",
-            "src/test/Service/serviceRegister.php",
-            "src/test/config/config.php",
-            "src/test/config/Boot.php"
+            "src/Router/Attribute/Generate/GenerateReflectionClass.php"
         ]
     },
 

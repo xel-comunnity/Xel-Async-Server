@@ -26,6 +26,10 @@ class Main
     )
     {}
 
+    /**
+     * @throws DependencyException
+     * @throws NotFoundException
+     */
     private function responseInterface(): XelResponse
     {
         /**@var  XelResponse $instance */
@@ -33,6 +37,10 @@ class Main
         return $instance($this->register);
     }
 
+    /**
+     * @throws DependencyException
+     * @throws NotFoundException
+     */
     private function routerRunner(): RouterRunner
     {
         /** @var RouterRunner $runner */

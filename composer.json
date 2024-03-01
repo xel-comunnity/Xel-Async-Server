@@ -29,5 +29,13 @@
     },
     "scripts": {
         "analyse": "phpstan analyse"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "require-dev": {
+        "pestphp/pest": "^2.34"
     }
 }

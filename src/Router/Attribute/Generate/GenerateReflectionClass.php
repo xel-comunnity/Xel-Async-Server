@@ -19,7 +19,7 @@ const CACHE_NAME = "class.cache";
  */
 function loaderClass(array $loader, string $cachePath, string $build = 'dev'): ?array
 {
-    if ($build !== "dev"){
+    if ($build === "dev"){
         return extractClass($loader);
     }
 

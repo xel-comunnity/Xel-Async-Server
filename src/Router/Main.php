@@ -103,7 +103,8 @@ class Main
                     $request,
                     $this->responseInterface(),
                     $abstractClass,
-                    $this->dispatch
+                    $this->dispatch,
+                    $this->register
                 );
 
                 // ? execute middleware stack

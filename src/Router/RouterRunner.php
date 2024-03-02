@@ -2,12 +2,12 @@
 
 namespace Xel\Async\Router;
 
+use DI\Container;
 use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Xel\Async\Http\Response as XelResponse;
 use Swoole\Http\Response as SwooleResponse;
-use Xel\Async\test\Service\AbstractService;
 use Xel\Psr7bridge\PsrFactory;
 
 class RouterRunner
@@ -19,11 +19,14 @@ class RouterRunner
      * @var array<int|string, mixed>
      */
     private array $dispatch;
+    private Container $container;
 
     /**
      * @param ServerRequestInterface $request
      * @param XelResponse $xelResponse
+     * @param string $parentClass
      * @param array<int|string, mixed> $dispatch
+     * @param Container $container
      * @return $this
      */
 
@@ -32,13 +35,15 @@ class RouterRunner
         ServerRequestInterface $request,
         XelResponse $xelResponse,
         string $parentClass,
-        array $dispatch
+        array $dispatch,
+        Container $container
     ): static
     {
        $this->request = $request;
        $this->xelResponse = $xelResponse;
        $this->dispatch = $dispatch;
        $this->parentClass = $parentClass;
+       $this->container = $container;
        return $this;
     }
 
@@ -67,8 +72,8 @@ class RouterRunner
         if ($instance instanceof $this->parentClass){
             $instance->setRequest($this->request);
             $instance->setResponse($this->xelResponse);
+            $instance->setContainer($this->container);
         }
-
 
         // ? Inject response as param to handle return value
         foreach ($vars as $value) {

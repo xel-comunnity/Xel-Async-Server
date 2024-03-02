@@ -20,7 +20,7 @@ const CACHE_NAME = "class.cache";
 function loaderClass(array $loader, string $cachePath): void
 {
     try {
-        if (!file_exists(CACHE_NAME)){
+        if (!file_exists($cachePath."/".CACHE_NAME)){
             $class = extractClass($loader);
 
             // ? CacheAble
@@ -97,7 +97,7 @@ function loadCachedClass(string $cachePath): array|null
 {
     try {
         if (file_exists($cachePath . "/" . CACHE_NAME)) {
-            return include $cachePath . "/" . CACHE_NAME;
+            return require $cachePath . "/" . CACHE_NAME;
         }
 
     } catch (RuntimeException $exception) {

@@ -21,12 +21,19 @@ class Main
      */
     private array $dispatch;
 
+    private QueryBuilder $queryBuilder;
+
     public function __construct(
         private readonly Container  $register,
         private readonly PsrFactory $psrFactory,
-        private readonly QueryBuilder $queryBuilder
     )
     {}
+
+    public function __invoke(QueryBuilder $queryBuilder): Main
+    {
+        $this->queryBuilder = $queryBuilder;
+        return $this;
+    }
 
     /**
      * @throws DependencyException

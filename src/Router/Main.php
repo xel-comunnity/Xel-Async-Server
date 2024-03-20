@@ -9,6 +9,7 @@ use FastRoute\RouteCollector;
 use Psr\Http\Message\ServerRequestInterface;
 use Swoole\Http\Response;
 use Xel\Async\Middleware\Runner;
+use Xel\DB\QueryBuilder\QueryBuilder;
 use Xel\Psr7bridge\PsrFactory;
 use Xel\Async\Http\Response as XelResponse;
 use function FastRoute\simpleDispatcher;
@@ -23,6 +24,7 @@ class Main
     public function __construct(
         private readonly Container  $register,
         private readonly PsrFactory $psrFactory,
+        private readonly QueryBuilder $queryBuilder
     )
     {}
 
@@ -104,7 +106,8 @@ class Main
                     $this->responseInterface(),
                     $abstractClass,
                     $this->dispatch,
-                    $this->register
+                    $this->register,
+                    $this->queryBuilder
                 );
 
                 // ? execute middleware stack

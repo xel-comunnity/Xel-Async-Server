@@ -8,12 +8,15 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Xel\Async\Http\Response as XelResponse;
 use Swoole\Http\Response as SwooleResponse;
+use Xel\DB\QueryBuilder\QueryBuilder;
 use Xel\Psr7bridge\PsrFactory;
 
 class RouterRunner
 {
     private ServerRequestInterface $request;
     private XelResponse $xelResponse;
+
+    private QueryBuilder $queryBuilder;
     private string $parentClass;
     /**
      * @var array<int|string, mixed>
@@ -36,7 +39,8 @@ class RouterRunner
         XelResponse $xelResponse,
         string $parentClass,
         array $dispatch,
-        Container $container
+        Container $container,
+        QueryBuilder $queryBuilder
     ): static
     {
        $this->request = $request;
@@ -44,6 +48,7 @@ class RouterRunner
        $this->dispatch = $dispatch;
        $this->parentClass = $parentClass;
        $this->container = $container;
+       $this->queryBuilder = $queryBuilder;
        return $this;
     }
 
@@ -73,6 +78,7 @@ class RouterRunner
             $instance->setRequest($this->request);
             $instance->setResponse($this->xelResponse);
             $instance->setContainer($this->container);
+            $instance->setQueryBuilder($this->queryBuilder);
         }
 
         // ? Inject response as param to handle return value

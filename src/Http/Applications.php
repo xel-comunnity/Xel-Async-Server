@@ -35,23 +35,28 @@ class Applications
     {
         // ? initial Psr Bridge Http Request & Response
         $psrBridge = new PsrFactory($register);
-        // ? initial loader for dynamic router
-        $router = new Main($register, $psrBridge, $this->instance->instance->setting['QueryBuilder']);
 
         /**
          * On workerStart
          */
         $this->instance
             ->instance
-            ->on("workerStart", function () use($dbConfig){
+            ->on("workerStart", function () use($dbConfig, $register, $psrBridge){
+                /**
+                 * db conn
+                 */
                 $db = (new XgenConnector($dbConfig, $dbConfig['pool'], $dbConfig['maxConnections']));
                 $queryBuilderExecutor = new QueryBuilderExecutor($db);
                 $queryBuilder = new QueryBuilder($queryBuilderExecutor);
 
+                // ? initial loader for dynamic router
+                $router = new Main($register, $psrBridge, $queryBuilder);
+
                 $this->instance
                     ->instance->setting = [
                     'QueryBuilder' => $queryBuilder,
-                    'XgenQueryAdapterInterface' => $db
+                    'XgenQueryAdapterInterface' => $db,
+                    'Main' => $router,
                 ];
 
             });
@@ -64,9 +69,13 @@ class Applications
             (
                 SwooleRequest $request,
                 SwooleResponse $response
-            ) use ($loader, $psrBridge, $router){
+            ) use ($loader, $psrBridge){
                 // ? Bridge Swoole Http Request
                 $req = $psrBridge->connectRequest($request);
+
+                /**@var Main $router*/
+                $router = $this->instance
+                    ->instance->setting['Main'];
 
                 // ? Router Dynamic Loader
                 $router

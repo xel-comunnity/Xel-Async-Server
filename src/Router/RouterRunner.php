@@ -30,6 +30,7 @@ class RouterRunner
      * @param string $parentClass
      * @param array<int|string, mixed> $dispatch
      * @param Container $container
+     * @param QueryBuilder $queryBuilder
      * @return $this
      */
 

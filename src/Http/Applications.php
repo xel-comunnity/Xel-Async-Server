@@ -47,6 +47,8 @@ class Applications
                  * db conn
                  */
                 $db = (new XgenConnector($dbConfig, $dbConfig['poolMode'], $dbConfig['pool']));
+                $db->initializationResource($dbConfig['channel']);
+                $db->initializeConnections();
                 $queryBuilderExecutor = new QueryBuilderExecutor($db, $dbConfig['poolMode']);
                 $queryBuilder = new QueryBuilder($queryBuilderExecutor);
 

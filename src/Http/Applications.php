@@ -35,7 +35,6 @@ class Applications
     {
         // ? initial Psr Bridge Http Request & Response
         $psrBridge = new PsrFactory($register);
-
         $router = new Main($register, $psrBridge);
 
         /**
@@ -47,14 +46,13 @@ class Applications
                 /**
                  * db conn
                  */
-                $db = (new XgenConnector($dbConfig, $dbConfig['pool'], $dbConfig['maxConnections']));
-                $queryBuilderExecutor = new QueryBuilderExecutor($db);
+                $db = (new XgenConnector($dbConfig, $dbConfig['poolMode'], $dbConfig['pool']));
+                $queryBuilderExecutor = new QueryBuilderExecutor($db, $dbConfig['poolMode']);
                 $queryBuilder = new QueryBuilder($queryBuilderExecutor);
 
                 $this->instance
                     ->instance->setting = [
-                    'QueryBuilder' => $queryBuilder,
-                    'XgenQueryAdapterInterface' => $db,
+                    'QueryBuilder' => $queryBuilder
                 ];
             });
 

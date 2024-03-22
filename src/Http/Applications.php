@@ -14,6 +14,7 @@ use Xel\Psr7bridge\PsrFactory;
 class Applications
 {
     private Servers $instance;
+    private QueryBuilder $queryBuilder;
 
     /**
      * @param array<string, mixed> $config
@@ -49,13 +50,10 @@ class Applications
                 $db = (new XgenConnector($dbConfig, $dbConfig['poolMode'], $dbConfig['pool']));
                 $db->initializationResource($dbConfig['channel']);
                 $db->initializeConnections();
-                $queryBuilderExecutor = new QueryBuilderExecutor($db, $dbConfig['poolMode']);
-                $queryBuilder = new QueryBuilder($queryBuilderExecutor);
 
-                $this->instance
-                    ->instance->setting = [
-                    'QueryBuilder' => $queryBuilder
-                ];
+                $queryBuilderExecutor = new QueryBuilderExecutor($db, $dbConfig['poolMode']);
+                $this->queryBuilder = new QueryBuilder($queryBuilderExecutor);
+
             });
 
         /**
@@ -70,9 +68,8 @@ class Applications
                 // ? Bridge Swoole Http Request
                 $req = $psrBridge->connectRequest($request);
 
-                /**@var QueryBuilder $db*/
-                $db = $this->instance->instance->setting['QueryBuilder'];
-                $routes = $router($db);
+                // ? connection Query Builder
+                $routes = $router($this->queryBuilder);
 
                 // ? Router Dynamic Loader
                 $routes

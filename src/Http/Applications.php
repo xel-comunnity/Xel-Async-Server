@@ -13,8 +13,8 @@ use Xel\Psr7bridge\PsrFactory;
 
 class Applications
 {
-    private Servers $instance;
-    private QueryBuilder $queryBuilder;
+    private ?Servers $instance = null;
+    private ?QueryBuilder $queryBuilder = null;
 
     /**
      * @param array<string, mixed> $config
@@ -47,12 +47,9 @@ class Applications
                 /**
                  * db conn
                  */
-                $db = (new XgenConnector($dbConfig, $dbConfig['poolMode'], $dbConfig['pool']));
-                $db->initializationResource($dbConfig['channel']);
+                $db = new XgenConnector($dbConfig, $dbConfig['poolMode'], $dbConfig['pool']);
                 $db->initializeConnections();
-
-                $queryBuilderExecutor = new QueryBuilderExecutor($db, $dbConfig['poolMode']);
-                $this->queryBuilder = new QueryBuilder($queryBuilderExecutor);
+                $this->queryBuilder = new QueryBuilder($db, $dbConfig['poolMode']);
 
             });
 

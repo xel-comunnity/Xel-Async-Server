@@ -21,19 +21,11 @@ class Main
      */
     private array $dispatch;
 
-    private QueryBuilder $queryBuilder;
-
     public function __construct(
         private readonly Container  $register,
         private readonly PsrFactory $psrFactory,
     )
     {}
-
-    public function __invoke(QueryBuilder $queryBuilder): Main
-    {
-        $this->queryBuilder = $queryBuilder;
-        return $this;
-    }
 
     /**
      * @throws DependencyException
@@ -114,10 +106,7 @@ class Main
                     $abstractClass,
                     $this->dispatch,
                     $this->register,
-                    $this->queryBuilder
                 );
-
-                $this->register->set('xgen', $this->queryBuilder);
 
                 // ? execute middleware stack
                 $middlewares = $this->dispatch[1][2];

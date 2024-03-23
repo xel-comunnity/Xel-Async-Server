@@ -4,17 +4,16 @@ namespace Xel\Async\Http;
 use DI\Container;
 use Swoole\Http\Request as SwooleRequest;
 use Swoole\Http\Response as SwooleResponse;
+use Xel\Async\Http\Server\QueryBuilders;
 use Xel\Async\Http\Server\Servers;
 use Xel\Async\Router\Main;
-use Xel\DB\QueryBuilder\QueryBuilder;
-use Xel\DB\QueryBuilder\QueryBuilderExecutor;
 use Xel\DB\XgenConnector;
 use Xel\Psr7bridge\PsrFactory;
 
 class Applications
 {
     private ?Servers $instance = null;
-    private ?QueryBuilder $queryBuilder = null;
+    private ?XgenConnector $dbConnection = null;
 
     /**
      * @param array<string, mixed> $config
@@ -38,19 +37,16 @@ class Applications
         $psrBridge = new PsrFactory($register);
         $router = new Main($register, $psrBridge);
 
+
         /**
          * On workerStart
          */
         $this->instance
             ->instance
-            ->on("workerStart", function () use($dbConfig, $register, $psrBridge){
-                /**
-                 * db conn
-                 */
+            ->on("workerStart", function () use($dbConfig){
                 $db = new XgenConnector($dbConfig, $dbConfig['poolMode'], $dbConfig['pool']);
                 $db->initializeConnections();
-                $this->queryBuilder = new QueryBuilder($db, $dbConfig['poolMode']);
-
+                $this->dbConnection = $db;
             });
 
         /**
@@ -61,15 +57,16 @@ class Applications
             (
                 SwooleRequest $request,
                 SwooleResponse $response
-            ) use ($loader, $psrBridge, $router){
+            ) use ($loader, $psrBridge, $router, $register, $dbConfig){
                 // ? Bridge Swoole Http Request
                 $req = $psrBridge->connectRequest($request);
 
-                // ? connection Query Builder
-                $routes = $router($this->queryBuilder);
+                // ? Query Builder
+                $queryBuilder = QueryBuilders::getQueryBuilder($this->dbConnection,$dbConfig['poolMode']);
+                $register->set('xgen', $queryBuilder);
 
                 // ? Router Dynamic Loader
-                $routes
+                $router
                     ->routerMapper($loader,$req->getMethod(),$req->getUri()->getPath())
                     ->Execute($req, $response);
        });

@@ -117,9 +117,11 @@ class Main
                     $this->queryBuilder
                 );
 
+                $this->register->set('xgen', $this->queryBuilder);
+
                 // ? execute middleware stack
                 $middlewares = $this->dispatch[1][2];
-                $mergeMiddleware = array_merge($this->globalMiddleware(),$middlewares);
+                $mergeMiddleware = array_merge($this->globalMiddleware(), $middlewares);
 
                 $data = new Runner($mergeMiddleware, $res);
 

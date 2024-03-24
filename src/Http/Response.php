@@ -10,8 +10,6 @@ use Psr\Http\Message\StreamInterface;
 
 final class Response
 {
-    private ?ResponseInterface $responseFactory = null;
-    private ?StreamInterface $streamFactory = null;
     private Container $register;
 
     public function __invoke(Container $register): Response
@@ -26,15 +24,11 @@ final class Response
      * @throws DependencyException
      * @throws NotFoundException
      */
-    private function lazyStreamFactory(mixed $content): StreamInterface
+    private function StreamFactory(mixed $content): StreamInterface
     {
-        if ($this->streamFactory === null){
-            /** @var Psr17Factory $streamFactory */
-            $streamFactory = $this->register->get('StreamFactory');
-            $this->streamFactory = $this->streamMaker($streamFactory, $content);
-        }
 
-        return $this->streamFactory;
+        $streamFactory = $this->register->get('StreamFactory');
+        return $this->streamMaker($streamFactory, $content);
     }
 
     /**
@@ -52,15 +46,11 @@ final class Response
      * @throws DependencyException
      * @throws NotFoundException
      */
-    private function lazyResponseFactory(): ResponseInterface
+    private function ResponseFactory(): ResponseInterface
     {
-        if ($this->responseFactory === null){
-            /** @var Psr17Factory $responseFactory */
-            $responseFactory = $this->register->get('ResponseFactory');
-            $this->responseFactory = $responseFactory->createResponse();
-        }
-
-        return $this->responseFactory;
+        /** @var Psr17Factory $responseFactory */
+        $responseFactory = $this->register->get('ResponseFactory');
+        return $responseFactory->createResponse();
     }
 
 
@@ -75,8 +65,8 @@ final class Response
     public function json(array $data, int $status, bool $print = false):ResponseInterface
     {
         $check = $print ? json_encode($data, JSON_PRETTY_PRINT) : json_encode($data);
-        return $this->lazyresponseFactory()
-            ->withBody($this->lazyStreamFactory($check))
+        return $this->responseFactory()
+            ->withBody($this->StreamFactory($check))
             ->withHeader('Content-Type', 'application/json')
             ->withStatus($status);
     }
@@ -90,8 +80,8 @@ final class Response
      */
     public function plain(string $data, int $status): ResponseInterface
     {
-        return $this->lazyresponseFactory()
-            ->withBody($this->lazyStreamFactory($data))
+        return $this->responseFactory()
+            ->withBody($this->StreamFactory($data))
             ->withHeader('Content-Type', 'text/plain')
             ->withStatus($status);
     }
@@ -105,8 +95,8 @@ final class Response
      */
     public function withError(array $errorMessage, int $status): ResponseInterface
     {
-        return $this->lazyresponseFactory()
-            ->withBody($this->lazyStreamFactory($errorMessage))
+        return $this->responseFactory()
+            ->withBody($this->StreamFactory($errorMessage))
             ->withHeader('Content-Type', 'application/json')
             ->withStatus($status);
     }

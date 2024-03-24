@@ -15,35 +15,34 @@ class Applications
     private ?Servers $instance = null;
     private ?XgenConnector $dbConnection = null;
 
-    /**
-     * @param array<string, mixed> $config
-     * @return self
-     */
-    public function initialize(array $config): self
-    {
-        $this->instance = new Servers($config);
-        return $this;
-    }
+    public function __construct
+    (
+        private readonly array $config,
+        private readonly array $loader,
+        private readonly array $dbConfig,
+        private readonly Container $register
+    )
+    {}
 
     /**
-     * @param array<string, mixed> $loader
-     * @param array $dbConfig
-     * @param Container $register
-     * @return self
+     * @return void
      */
-    public function onEvent(array $loader, array $dbConfig,  Container $register): self
+    public function initialize(): void
     {
+        // ? server Init
+        $this->instance = new Servers($this->config);
+
         // ? initial Psr Bridge Http Request & Response
-        $psrBridge = new PsrFactory($register);
-        $router = new Main($register, $psrBridge);
+        $psrBridge = new PsrFactory($this->register);
+        $router = new Main($this->register, $psrBridge);
 
         /**
          * On workerStart
          */
         $this->instance
             ->instance
-            ->on("workerStart", function () use($dbConfig){
-                $db = new XgenConnector($dbConfig, $dbConfig['poolMode'], $dbConfig['pool']);
+            ->on("workerStart", function (){
+                $db = new XgenConnector($this->dbConfig, $this->dbConfig['poolMode'], $this->dbConfig['pool']);
                 $db->initializeConnections();
                 $this->dbConnection = $db;
             });
@@ -56,24 +55,21 @@ class Applications
             (
                 SwooleRequest $request,
                 SwooleResponse $response
-            ) use ($loader, $psrBridge, $router, $register, $dbConfig){
+            ) use ($psrBridge, $router){
                 // ? Bridge Swoole Http Request
                 $req = $psrBridge->connectRequest($request);
 
                 // ? Query Builder
-                $queryBuilder = QueryBuilders::getQueryBuilder($this->dbConnection, $dbConfig['poolMode']);
-                $register->set('xgen', $queryBuilder);
+                $queryBuilder = QueryBuilders::getQueryBuilder($this->dbConnection, $this->dbConfig['poolMode']);
+                $this->register->set('xgen', $queryBuilder);
 
                 // ? Router Dynamic Loader
                 $router
-                    ->routerMapper($loader,$req->getMethod(),$req->getUri()->getPath())
+                    ->routerMapper($this->loader,$req->getMethod(),$req->getUri()->getPath())
                     ->Execute($req, $response);
-       });
-        return $this;
+            });
+
+            $this->instance->launch();
     }
 
-    public function run(): void
-    {
-        $this->instance->launch();
-    }
 }

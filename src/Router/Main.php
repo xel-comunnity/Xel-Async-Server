@@ -9,7 +9,6 @@ use FastRoute\RouteCollector;
 use Psr\Http\Message\ServerRequestInterface;
 use Swoole\Http\Response;
 use Xel\Async\Middleware\Runner;
-use Xel\DB\QueryBuilder\QueryBuilder;
 use Xel\Psr7bridge\PsrFactory;
 use Xel\Async\Http\Response as XelResponse;
 use function FastRoute\simpleDispatcher;
@@ -70,13 +69,11 @@ class Main
     public function routerMapper(array $loader, string $method, string $uri): static
     {
         $router = simpleDispatcher(function (RouteCollector $routeCollector) use ($loader){
-            $routeCollector->addGroup('/api', function (RouteCollector $r) use ($loader){
-                foreach ($loader as $item){
-                    $class = $item['Class'];
-                    $method = $item['Method'];
-                    $r->addRoute($item['RequestMethod'], $item['Uri'], [$class, $method, $item["Middlewares"]]);
-                }
-            });
+            foreach ($loader as $item){
+                $class = $item['Class'];
+                $method = $item['Method'];
+                $routeCollector->addRoute($item['RequestMethod'], $item['Uri'], [$class, $method, $item["Middlewares"]]);
+            }
         });
 
         $this->dispatch = $router->dispatch($method, $uri);

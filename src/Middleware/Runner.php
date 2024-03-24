@@ -9,9 +9,9 @@ use Psr\Http\Server\RequestHandlerInterface;
 use SplQueue;
 use Xel\Async\Router\RouterRunner;
 
-class Runner implements RequestHandlerInterface
+final class Runner implements RequestHandlerInterface
 {
-    private SplQueue $queue;
+    protected SplQueue $queue;
 
     /**
      * @param array<string, mixed> $middlewares
@@ -20,12 +20,16 @@ class Runner implements RequestHandlerInterface
     public function __construct
     (
         array $middlewares,
-        private readonly RouterRunner $routerRunner)
+        protected readonly RouterRunner $routerRunner
+    )
     {
         $this->queue = new SplQueue();
         foreach ($middlewares as $middleware) {
+
             $instance = new $middleware;
-            $this->queue->enqueue($instance);
+            if ($instance instanceof MiddlewareInterface){
+                $this->queue->enqueue($instance);
+            }
         }
     }
 

@@ -37,7 +37,6 @@ class Applications
         $psrBridge = new PsrFactory($register);
         $router = new Main($register, $psrBridge);
 
-
         /**
          * On workerStart
          */
@@ -62,7 +61,7 @@ class Applications
                 $req = $psrBridge->connectRequest($request);
 
                 // ? Query Builder
-                $queryBuilder = QueryBuilders::getQueryBuilder($this->dbConnection,$dbConfig['poolMode']);
+                $queryBuilder = QueryBuilders::getQueryBuilder($this->dbConnection, $dbConfig['poolMode']);
                 $register->set('xgen', $queryBuilder);
 
                 // ? Router Dynamic Loader

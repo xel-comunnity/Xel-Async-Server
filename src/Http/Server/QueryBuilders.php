@@ -1,8 +1,6 @@
 <?php
 
 namespace Xel\Async\Http\Server;
-
-use PDO;
 use Xel\DB\QueryBuilder\QueryBuilder;
 use Xel\DB\XgenConnector;
 

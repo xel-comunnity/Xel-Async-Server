@@ -89,5 +89,4 @@ class RouterRunner
     {
         $psrFactory->connectResponse($response, $swooleResponse);
     }
-
 }

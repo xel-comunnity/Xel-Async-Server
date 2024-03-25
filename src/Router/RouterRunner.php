@@ -3,6 +3,8 @@
 namespace Xel\Async\Router;
 
 use DI\Container;
+use DI\DependencyException;
+use DI\NotFoundException;
 use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -47,6 +49,10 @@ class RouterRunner
        return $this;
     }
 
+    /**
+     * @throws DependencyException
+     * @throws NotFoundException
+     */
     public function init(): ResponseInterface
     {
         [$class,$method] = $this->dispatch[1];
@@ -75,6 +81,12 @@ class RouterRunner
             $instance->setContainer($this->container);
         }
 
+        /***
+         * Injecting to Base Model
+         */
+        $BaseData = $this->container->get('Basedata');
+        $BaseData->setDB($this->container->get('xgen'));
+
         // ? Inject response as param to handle return value
         foreach ($vars as $value) {
             $param[] = $value;
@@ -83,7 +95,6 @@ class RouterRunner
         // ? Ensure that $instance is an object before calling the method
         /** @var callable $object */
         return call_user_func_array($object, $param);
-
     }
     public function exec(PsrFactory $psrFactory,SwooleResponse $swooleResponse, ResponseInterface $response): void
     {

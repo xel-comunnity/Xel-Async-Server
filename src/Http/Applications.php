@@ -45,12 +45,6 @@ class Applications
                 $db = new XgenConnector($this->dbConfig, $this->dbConfig['poolMode'], $this->dbConfig['pool']);
                 $db->initializeConnections();
                 $this->dbConnection = $db;
-
-                /**
-                 * Set Xgen Connector
-                 */
-                $baseData = $this->register->get('Basedata');
-                $baseData->setDB($db);
             });
 
         /**

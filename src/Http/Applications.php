@@ -12,7 +12,6 @@ use Xel\Psr7bridge\PsrFactory;
 
 class Applications
 {
-    private ?Servers $instance = null;
     private ?XgenConnector $dbConnection = null;
 
     public function __construct
@@ -30,7 +29,8 @@ class Applications
     public function initialize(): void
     {
         // ? server Init
-        $this->instance = new Servers($this->config);
+        $instance = null;
+        $instance = new Servers($this->config);
 
         // ? initial Psr Bridge Http Request & Response
         $psrBridge = new PsrFactory($this->register);
@@ -39,7 +39,7 @@ class Applications
         /**
          * On workerStart
          */
-        $this->instance
+        $instance
             ->instance
             ->on("workerStart", function (){
                 $db = new XgenConnector($this->dbConfig, $this->dbConfig['poolMode'], $this->dbConfig['pool']);
@@ -50,7 +50,7 @@ class Applications
         /**
          * On request
          */
-        $this->instance->instance
+        $instance->instance
             ->on('request', function
             (
                 SwooleRequest $request,
@@ -69,7 +69,7 @@ class Applications
                     ->Execute($req, $response);
             });
 
-            $this->instance->launch();
+            $instance->launch();
     }
 
 }

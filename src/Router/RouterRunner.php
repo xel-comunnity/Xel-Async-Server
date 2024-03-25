@@ -81,12 +81,6 @@ class RouterRunner
             $instance->setContainer($this->container);
         }
 
-        /***
-         * Injecting to Base Model
-         */
-        $BaseData = $this->container->get('Basedata');
-        $BaseData->setDB($this->container->get('xgen'));
-
         // ? Inject response as param to handle return value
         foreach ($vars as $value) {
             $param[] = $value;

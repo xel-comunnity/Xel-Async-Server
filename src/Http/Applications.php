@@ -52,6 +52,10 @@ class Applications
                 $queryBuilder = QueryBuilders::getQueryBuilder($this->dbConnection, $this->dbConfig['poolMode']);
                 $this->queryBuilder = $queryBuilder;
                 $this->register->set('xgen', $queryBuilder);
+
+                // ? db manager
+                $dbManager = $this->register->get('BaseData');
+                $dbManager($db,$queryBuilder);
             });
 
         /**

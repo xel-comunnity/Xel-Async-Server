@@ -7,19 +7,21 @@ use Swoole\Http\Response as SwooleResponse;
 use Xel\Async\Http\Server\QueryBuilders;
 use Xel\Async\Http\Server\Servers;
 use Xel\Async\Router\Main;
+use Xel\DB\QueryBuilder\QueryBuilder;
 use Xel\DB\XgenConnector;
 use Xel\Psr7bridge\PsrFactory;
 
 class Applications
 {
     private ?XgenConnector $dbConnection = null;
+    private QueryBuilder $queryBuilder;
 
     public function __construct
     (
         private readonly array $config,
         private readonly array $loader,
         private readonly array $dbConfig,
-        private readonly Container $register
+        private readonly Container $register,
     )
     {}
 
@@ -48,6 +50,7 @@ class Applications
 
                 // ? Query Builder
                 $queryBuilder = QueryBuilders::getQueryBuilder($this->dbConnection, $this->dbConfig['poolMode']);
+                $this->queryBuilder = $queryBuilder;
                 $this->register->set('xgen', $queryBuilder);
             });
 
@@ -69,6 +72,16 @@ class Applications
             });
 
             $instance->launch();
+    }
+
+    public function getConnection(): ?XgenConnector
+    {
+        return $this->dbConnection;
+    }
+
+    public function getQueryBuilder(): QueryBuilder
+    {
+        return $this->queryBuilder;
     }
 
 }

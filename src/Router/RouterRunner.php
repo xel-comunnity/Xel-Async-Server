@@ -69,7 +69,7 @@ class RouterRunner
         }
 
         // ? Create an instance of $class
-        $instance = new $class();
+        $instance = $this->container->make($class);
         $object = [$instance, $method];
 
         /**

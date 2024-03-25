@@ -45,6 +45,10 @@ class Applications
                 $db = new XgenConnector($this->dbConfig, $this->dbConfig['poolMode'], $this->dbConfig['pool']);
                 $db->initializeConnections();
                 $this->dbConnection = $db;
+
+                // ? Query Builder
+                $queryBuilder = QueryBuilders::getQueryBuilder($this->dbConnection, $this->dbConfig['poolMode']);
+                $this->register->set('xgen', $queryBuilder);
             });
 
         /**
@@ -58,11 +62,6 @@ class Applications
             ) use ($psrBridge, $router){
                 // ? Bridge Swoole Http Request
                 $req = $psrBridge->connectRequest($request);
-
-                // ? Query Builder
-                $queryBuilder = QueryBuilders::getQueryBuilder($this->dbConnection, $this->dbConfig['poolMode']);
-                $this->register->set('xgen', $queryBuilder);
-
                 // ? Router Dynamic Loader
                 $router
                     ->routerMapper($this->loader,$req->getMethod(),$req->getUri()->getPath())

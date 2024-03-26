@@ -73,13 +73,14 @@ class RouterRunner
         $object = [$instance, $method];
 
         /**
-         * Injecting Request and Response Interface
+         * Injecting Request, Response Interface, Container
          */
         if ($instance instanceof $this->parentClass){
             $instance->setRequest($this->request);
             $instance->setResponse($this->xelResponse);
             $instance->setContainer($this->container);
         }
+
 
         // ? Inject response as param to handle return value
         foreach ($vars as $value) {

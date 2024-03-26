@@ -4,8 +4,9 @@ namespace Xel\Async\Http;
 use DI\Container;
 use Swoole\Http\Request as SwooleRequest;
 use Swoole\Http\Response as SwooleResponse;
-use Xel\Async\Http\Server\QueryBuilders;
+use Xel\Async\Http\Server\QueryBuildersManager;
 use Xel\Async\Http\Server\Servers;
+use Xel\Async\Http\Server\XgenBuilderManager;
 use Xel\Async\Router\Main;
 use Xel\DB\QueryBuilder\QueryBuilder;
 use Xel\DB\XgenConnector;
@@ -44,18 +45,16 @@ class Applications
         $instance
             ->instance
             ->on("workerStart", function (){
-                $db = new XgenConnector($this->dbConfig, $this->dbConfig['poolMode'], $this->dbConfig['pool']);
-                $db->initializeConnections();
-                $this->dbConnection = $db;
+                // ? xgen connector
+                $conn = new XgenBuilderManager($this->dbConfig, $this->dbConfig['poolMode'], $this->dbConfig['pool']);
 
                 // ? Query Builder
-                $queryBuilder = QueryBuilders::getQueryBuilder($this->dbConnection, $this->dbConfig['poolMode']);
-                $this->queryBuilder = $queryBuilder;
-                $this->register->set('xgen', $queryBuilder);
+                $builder = new QueryBuildersManager($conn->getConnection(), $this->dbConfig['poolMode']);
+                $this->register->set('xgen', $builder->getQueryBuilder());
 
-                // ? db manager
-                $dbManager = $this->register->get('BaseData');
-                $dbManager($db,$queryBuilder);
+                // add to property value
+                $this->queryBuilder = $builder->getQueryBuilder();
+
             });
 
         /**

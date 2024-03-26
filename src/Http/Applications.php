@@ -45,10 +45,11 @@ class Applications
             ->instance
             ->on("workerStart", function (){
                 // ? xgen connector
-                $conn = new XgenBuilderManager($this->dbConfig, $this->dbConfig['poolMode'], $this->dbConfig['pool']);
+                $conn = new XgenConnector($this->dbConfig, $this->dbConfig['poolMode'], $this->dbConfig['pool']);
+                $conn->initializeConnections();
 
                 // ? Query Builder
-                $builder = new QueryBuildersManager($conn->getConnection(), $this->dbConfig['poolMode']);
+                $builder = new QueryBuildersManager($conn, $this->dbConfig['poolMode']);
                 $this->register->set('xgen', $builder->getQueryBuilder());
 
                 // add to property value

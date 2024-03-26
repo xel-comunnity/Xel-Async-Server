@@ -32,7 +32,6 @@ class Applications
     public function initialize(): void
     {
         // ? server Init
-        $instance = null;
         $instance = new Servers($this->config);
 
         // ? initial Psr Bridge Http Request & Response

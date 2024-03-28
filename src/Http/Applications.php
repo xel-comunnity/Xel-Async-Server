@@ -8,21 +8,19 @@ use Xel\Async\Http\Server\QueryBuildersManager;
 use Xel\Async\Http\Server\Servers;
 use Xel\Async\Http\Server\XgenBuilderManager;
 use Xel\Async\Router\Main;
-use Xel\DB\QueryBuilder\QueryBuilder;
+
+use Xel\DB\Contract\QueryDMLInterface;
 use Xel\DB\XgenConnector;
 use Xel\Psr7bridge\PsrFactory;
 
-class Applications
+readonly class Applications
 {
-    private ?XgenConnector $dbConnection = null;
-    private QueryBuilder $queryBuilder;
-
     public function __construct
     (
-        private readonly array $config,
-        private readonly array $loader,
-        private readonly array $dbConfig,
-        private readonly Container $register,
+        private array     $config,
+        private array     $loader,
+        private array     $dbConfig,
+        private Container $register,
     )
     {}
 
@@ -51,10 +49,6 @@ class Applications
                 // ? Query Builder
                 $builder = new QueryBuildersManager($conn, $this->dbConfig['poolMode']);
                 $this->register->set('xgen', $builder->getQueryBuilder());
-
-                // add to property value
-                $this->queryBuilder = $builder->getQueryBuilder();
-
             });
 
         /**
@@ -76,15 +70,4 @@ class Applications
 
             $instance->launch();
     }
-
-    public function getConnection(): ?XgenConnector
-    {
-        return $this->dbConnection;
-    }
-
-    public function getQueryBuilder(): QueryBuilder
-    {
-        return $this->queryBuilder;
-    }
-
 }

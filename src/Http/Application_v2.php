@@ -33,9 +33,11 @@ readonly class Application_v2 implements ApplicationInterface
         $server = Server_v2::getServer();
 
         // ? server start
+        $server->on('Start', [$this, 'onStart']);
         $server->on('WorkerStart', [$this, 'onWorkerStart']);
         $server->on('Request', [$this, 'onRequest']);
 //        $server->on('Task', [$this, 'onTask']);
+        $server->start();
 
     }
 
@@ -43,6 +45,10 @@ readonly class Application_v2 implements ApplicationInterface
      * HTTP Server Section
      ******************************************************************************************************************/
 
+    public function onStart(): void
+    {
+        echo "Listen : {$this->config['api_server']['host']}:{$this->config['api_server']['port']}";
+    }
     /**
      * @throws Exception
      */

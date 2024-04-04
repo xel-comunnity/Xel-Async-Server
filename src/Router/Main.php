@@ -6,6 +6,7 @@ use DI\DependencyException;
 use DI\NotFoundException;
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
+use InvalidArgumentException;
 use Psr\Http\Message\ServerRequestInterface;
 use Swoole\Http\Response;
 use Xel\Async\Middleware\Runner;
@@ -83,6 +84,7 @@ class Main
     /**
      * @throws DependencyException
      * @throws NotFoundException
+     * @throws \Exception
      */
     public function execute(ServerRequestInterface $request, Response $response): void
     {
@@ -95,25 +97,48 @@ class Main
                 break;
             case Dispatcher::FOUND:
                 $abstractClass = $this->register->get("AbstractService");
+                [$class,$method] = $this->dispatch[1];
+                $vars = $this->dispatch[2];
 
-                // ? Router Dispatch
-                $res = $this->routerRunner()(
-                    $request,
-                    $this->responseInterface(),
-                    $abstractClass,
-                    $this->dispatch,
-                    $this->register,
-                );
+                $param = [];
+
+                if (!class_exists($class)) {
+                    throw new InvalidArgumentException('Invalid class name');
+                }
+
+                if (!method_exists($class, $method)) {
+                    throw new InvalidArgumentException('Invalid method name');
+                }
+
+                // ? Create an instance of $class
+                $instance = $this->register->make($class);
+                $object = [$instance, $method];
+
+                /**
+                 * Injecting Request, Response Interface, Container
+                 */
+                if ($instance instanceof $abstractClass){
+                    $instance->setRequest($request);
+                    $instance->setResponse($this->responseInterface());
+                    $instance->setContainer($this->register);
+                }
+
+
+                // ? Inject response as param to handle return value
+                foreach ($vars as $value) {
+                    $param[] = $value;
+                }
 
                 // ? execute middleware stack
                 $middlewares = $this->dispatch[1][2];
                 $mergeMiddleware = array_merge($this->globalMiddleware(), $middlewares);
 
-                $data = new Runner($mergeMiddleware, $res);
-
                 // ? execute router when already run stack of middleware
+                $data = new Runner($mergeMiddleware, call_user_func_array($object, $param));
                 $responses = $data->handle($request);
-                $this->routerRunner()->exec($this->psrFactory, $response, $responses);
+
+                // ? merge Result of Response
+                $this->psrFactory->connectResponse($responses, $response);
         }
     }
 

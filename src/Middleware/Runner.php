@@ -2,6 +2,9 @@
 
 namespace Xel\Async\Middleware;
 
+use DI\DependencyException;
+use DI\NotFoundException;
+use Exception;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -35,6 +38,7 @@ final class Runner implements RequestHandlerInterface
 
     /**
      * @inheritDoc
+     * @throws Exception
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
@@ -49,6 +53,10 @@ final class Runner implements RequestHandlerInterface
                 return $middleware->process($request, $this);
             }
         }
-        return $this->routerRunner->init();
+        try {
+            return $this->routerRunner->init();
+        } catch (DependencyException|NotFoundException $e) {
+            throw new Exception($e->getMessage());
+        }
     }
 }

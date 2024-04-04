@@ -2,7 +2,6 @@
 
 namespace Xel\Async\Http;
 
-use Closure;
 use DI\Container;
 use DI\DependencyException;
 use DI\NotFoundException;

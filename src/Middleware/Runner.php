@@ -18,12 +18,12 @@ final class Runner implements RequestHandlerInterface
 
     /**
      * @param array<string, mixed> $middlewares
-     * @param RouterRunner $routerRunner
+     * @param ResponseInterface $routerRunner
      */
     public function __construct
     (
         array $middlewares,
-        protected readonly RouterRunner $routerRunner
+        protected readonly ResponseInterface $routerRunner
     )
     {
         $this->queue = new SplQueue();
@@ -53,10 +53,6 @@ final class Runner implements RequestHandlerInterface
                 return $middleware->process($request, $this);
             }
         }
-        try {
-            return $this->routerRunner->init();
-        } catch (DependencyException|NotFoundException $e) {
-            throw new Exception($e->getMessage());
-        }
+        return $this->routerRunner;
     }
 }

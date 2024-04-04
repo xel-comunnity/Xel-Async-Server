@@ -7,6 +7,7 @@ use DI\NotFoundException;
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use InvalidArgumentException;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Swoole\Http\Response;
 use Xel\Async\Middleware\Runner;
@@ -133,8 +134,11 @@ class Main
                 $middlewares = $this->dispatch[1][2];
                 $mergeMiddleware = array_merge($this->globalMiddleware(), $middlewares);
 
-                // ? execute router when already run stack of middleware
-                $data = new Runner($mergeMiddleware, call_user_func_array($object, $param));
+                /***
+                 * @var ResponseInterface $bindParam
+                 */
+                $bindParam = call_user_func_array($object, $param);
+                $data = new Runner($mergeMiddleware, $bindParam);
                 $responses = $data->handle($request);
 
                 // ? merge Result of Response

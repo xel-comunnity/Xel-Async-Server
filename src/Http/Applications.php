@@ -4,16 +4,14 @@ namespace Xel\Async\Http;
 use DI\Container;
 use Swoole\Http\Request as SwooleRequest;
 use Swoole\Http\Response as SwooleResponse;
+use Xel\Async\Contract\ApplicationInterface;
 use Xel\Async\Http\Server\QueryBuildersManager;
 use Xel\Async\Http\Server\Servers;
-use Xel\Async\Http\Server\XgenBuilderManager;
 use Xel\Async\Router\Main;
-
-use Xel\DB\Contract\QueryDMLInterface;
 use Xel\DB\XgenConnector;
 use Xel\Psr7bridge\PsrFactory;
 
-readonly class Applications
+class Applications implements ApplicationInterface
 {
     public function __construct
     (
@@ -31,7 +29,6 @@ readonly class Applications
     {
         // ? server Init
         $instance = new Servers($this->config);
-
         // ? initial Psr Bridge Http Request & Response
         $psrBridge = new PsrFactory($this->register);
         $router = new Main($this->register, $psrBridge);
@@ -39,8 +36,7 @@ readonly class Applications
         /**
          * On workerStart
          */
-        $instance
-            ->instance
+        $instance->instance
             ->on("workerStart", function (){
                 // ? xgen connector
                 $conn = new XgenConnector($this->dbConfig, $this->dbConfig['poolMode'], $this->dbConfig['pool']);
@@ -54,8 +50,7 @@ readonly class Applications
         /**
          * On request
          */
-        $instance->instance
-            ->on('request', function
+        $instance->instance->on('request', function
             (
                 SwooleRequest $request,
                 SwooleResponse $response
@@ -68,6 +63,10 @@ readonly class Applications
                     ->Execute($req, $response);
             });
 
-            $instance->launch();
+        /**
+         * On Task
+         */
+
+        $instance->launch();
     }
 }

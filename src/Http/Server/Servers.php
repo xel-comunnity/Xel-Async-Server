@@ -6,7 +6,6 @@ use Swoole\Http\Server;
 class Servers
 {
     public Server $instance;
-
     /**
      * @param array<string, mixed> $config
      */
@@ -15,10 +14,6 @@ class Servers
         // ? Initialize the server instance
         $this->initialize($config);
 
-        // ? Set event handler for 'start'
-        $this->instance->on('start', function () use ($config) {
-            echo "Listening at " . $config['api_server']['host'] . ":" . $config['api_server']['port'] . " \n";
-        });
     }
 
     /**
@@ -37,6 +32,13 @@ class Servers
             : new Server($host, $port, $mode, SWOOLE_SOCK_TCP);
 
         $this->instance->set($config['api_server']['options']);
+
+//        if (count($config['ws_server']) !== null){
+//            $listen = $this->instance->listen($config['ws_server']['host'], $config['ws_server']['port'],  $config['ws_server']['port'] ?? SWOOLE_SOCK_TCP);
+//            $this->listen = $listen;
+//        }
+//        $this->instance->set($config['ws_server']['options']);
+
     }
 
     public function launch(): void

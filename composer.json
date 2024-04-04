@@ -12,7 +12,8 @@
 
     "autoload": {
         "psr-4": {
-            "Xel\\Async\\": "src/"
+            "Xel\\Async\\": "src/",
+            "Xel\\Example\\": "Example/"
         },
         "files": [
             "src/Router/Attribute/Generate/GenerateReflectionClass.php"

@@ -65,13 +65,13 @@ final class Application_v2 implements ApplicationInterface
 //        $conn->initializeConnections();
 
         $conn = new PDOPool((new PDOConfig())
-            ->withDriver($this->config['driver'])
-            ->withCharset($this->config['charset'])
-            ->withHost($this->config['host'])
-            ->withUsername($this->config['username'])
-            ->withPassword($this->config['password'])
-            ->withDbname($this->config['dbname'])
-            ->withOptions($this->config['options']),
+            ->withDriver($this->dbConfig['driver'])
+            ->withCharset($this->dbConfig['charset'])
+            ->withHost($this->dbConfig['host'])
+            ->withUsername($this->dbConfig['username'])
+            ->withPassword($this->dbConfig['password'])
+            ->withDbname($this->dbConfig['dbname'])
+            ->withOptions($this->dbConfig['options']),
             $this->config['pool']);
 
         // ? Query Builder

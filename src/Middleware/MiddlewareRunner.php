@@ -2,17 +2,14 @@
 
 namespace Xel\Async\Middleware;
 
-use DI\DependencyException;
-use DI\NotFoundException;
 use Exception;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use SplQueue;
-use Xel\Async\Router\RouterRunner;
 
-final class Runner implements RequestHandlerInterface
+final class MiddlewareRunner implements RequestHandlerInterface
 {
     protected SplQueue $queue;
 

@@ -10,7 +10,7 @@ use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Swoole\Http\Response;
-use Xel\Async\Middleware\Runner;
+use Xel\Async\Middleware\MiddlewareRunner;
 use Xel\Psr7bridge\PsrFactory;
 use Xel\Async\Http\Response as XelResponse;
 use function FastRoute\simpleDispatcher;
@@ -40,17 +40,6 @@ class Main
     }
 
     /**
-     * @throws DependencyException
-     * @throws NotFoundException
-     */
-    private function routerRunner(): RouterRunner
-    {
-        /** @var RouterRunner $runner */
-        $runner = $this->register->get("RouterRunner");
-        return $runner;
-    }
-
-    /**
      * @return class-string[]
      * @throws DependencyException
      * @throws NotFoundException
@@ -77,7 +66,6 @@ class Main
                 $routeCollector->addRoute($item['RequestMethod'], $item['Uri'], [$class, $method, $item["Middlewares"]]);
             }
         });
-
         $this->dispatch = $router->dispatch($method, $uri);
         return $this;
     }
@@ -124,7 +112,6 @@ class Main
                     $instance->setContainer($this->register);
                 }
 
-
                 // ? Inject response as param to handle return value
                 foreach ($vars as $value) {
                     $param[] = $value;
@@ -138,12 +125,13 @@ class Main
                  * @var ResponseInterface $bindParam
                  */
                 $bindParam = call_user_func_array($object, $param);
-                $data = new Runner($mergeMiddleware, $bindParam);
+                $data = new MiddlewareRunner($mergeMiddleware, $bindParam);
                 $responses = $data->handle($request);
 
                 // ? merge Result of Response
                 $this->psrFactory->connectResponse($responses, $response);
         }
     }
+
 
 }

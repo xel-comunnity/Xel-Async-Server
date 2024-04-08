@@ -6,17 +6,24 @@ use DI\Container;
 use DI\DependencyException;
 use DI\NotFoundException;
 use Exception;
+use PDO;
+use Swoole\Database\PDOConfig;
+use Swoole\Database\PDOPool;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
+use Swoole\Server;
 use Xel\Async\Contract\ApplicationInterface;
 use Xel\Async\Http\Server\QueryBuildersManager;
 use Xel\Async\Http\Server\Server_v2;
 use Xel\Async\Router\Main;
+use Xel\DB\QueryBuilder\QueryDML;
 use Xel\DB\XgenConnector;
 use Xel\Psr7bridge\PsrFactory;
 
-readonly class Application_v2 implements ApplicationInterface
+final class Application_v2 implements ApplicationInterface
 {
+    private Server $server;
+    private array $asyncTask;
     public function __construct
     (
         private array $config,
@@ -30,12 +37,12 @@ readonly class Application_v2 implements ApplicationInterface
     {
         Server_v2::init($this->config);
         $server = Server_v2::getServer();
+        $this->server = $server;
 
         // ? server start
         $server->on('Start', [$this, 'onStart']);
         $server->on('WorkerStart', [$this, 'onWorkerStart']);
         $server->on('Request', [$this, 'onRequest']);
-//        $server->on('Task', [$this, 'onTask']);
         $server->start();
 
     }
@@ -54,12 +61,22 @@ readonly class Application_v2 implements ApplicationInterface
     public function onWorkerStart(): void
     {
         // ? xgen connector
-        $conn = new XgenConnector($this->dbConfig, $this->dbConfig['poolMode'], $this->dbConfig['pool']);
-        $conn->initializeConnections();
+//        $conn = new XgenConnector($this->dbConfig, $this->dbConfig['poolMode'], $this->dbConfig['pool']);
+//        $conn->initializeConnections();
+
+        $conn = new PDOPool((new PDOConfig())
+            ->withDriver($this->config['driver'])
+            ->withCharset($this->config['charset'])
+            ->withHost($this->config['host'])
+            ->withUsername($this->config['username'])
+            ->withPassword($this->config['password'])
+            ->withDbname($this->config['dbname'])
+            ->withOptions($this->config['options']),
+            $this->config['pool']);
 
         // ? Query Builder
-        $builder = new QueryBuildersManager($conn, $this->dbConfig['poolMode']);
-        $this->register->set('xgen', $builder->getQueryBuilder());
+        $builder = new QueryDML($conn, $this->dbConfig['poolMode']);
+        $this->register->set('xgen', $builder);
     }
 
     /**
@@ -72,10 +89,14 @@ readonly class Application_v2 implements ApplicationInterface
         $this->router()
             ->routerMapper($this->loader, $req->getMethod(),$req->getUri())
             ->execute($req, $response);
+
+        // ? Execute Async Task and pass a property
     }
 
-//    public function onTask()
-//    {}
+    public function onTask()
+    {
+
+    }
 
     /******************************************************************************************************************
      * Server Utility Section
@@ -86,6 +107,6 @@ readonly class Application_v2 implements ApplicationInterface
     }
     private function router(): Main
     {
-        return new Main($this->register, $this->psr7Bridge());
+        return new Main($this->register, $this->psr7Bridge(), $this->server);
     }
 }

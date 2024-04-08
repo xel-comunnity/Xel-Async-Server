@@ -72,7 +72,7 @@ final class Application_v2 implements ApplicationInterface
             ->withPassword($this->dbConfig['password'])
             ->withDbname($this->dbConfig['dbname'])
             ->withOptions($this->dbConfig['options']),
-            $this->config['pool']);
+            $this->dbConfig['pool']);
 
         // ? Query Builder
         $builder = new QueryDML($conn, $this->dbConfig['poolMode']);

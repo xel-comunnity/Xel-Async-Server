@@ -105,17 +105,17 @@ class Main
                 }
 
                 // ? Create an instance of $class
-                $instance = $this->register->make($class);
+                $instance = $this->register->make($class, [$request, $this->responseInterface(), $this->register]);
                 $object = [$instance, $method];
 
                 /**
                  * Injecting Request, Response Interface, Container
                  */
-                if ($instance instanceof $abstractClass){
-                    $instance->setRequest($request);
-                    $instance->setResponse($this->responseInterface());
-                    $instance->setContainer($this->register);
-                }
+//                if ($instance instanceof $abstractClass){
+//                    $instance->setRequest($request);
+//                    $instance->setResponse($this->responseInterface());
+//                    $instance->setContainer($this->register);
+//                }
 
                 // ? Inject response as param to handle return value
                 foreach ($vars as $value) {

@@ -61,9 +61,6 @@ final class Application_v2 implements ApplicationInterface
     public function onWorkerStart(): void
     {
         // ? xgen connector
-//        $conn = new XgenConnector($this->dbConfig, $this->dbConfig['poolMode'], $this->dbConfig['pool']);
-//        $conn->initializeConnections();
-
         $conn = new PDOPool((new PDOConfig())
             ->withDriver($this->dbConfig['driver'])
             ->withCharset($this->dbConfig['charset'])
@@ -87,15 +84,9 @@ final class Application_v2 implements ApplicationInterface
     {
         $req = $this->psr7Bridge()->connectRequest($request);
         $this->router()
-            ->routerMapper($this->loader, $req->getMethod(),$req->getUri())
+            ->routerMapper()
+            ->dispatch($req->getMethod(),$req->getUri())
             ->execute($req, $response);
-
-        // ? Execute Async Task and pass a property
-    }
-
-    public function onTask()
-    {
-
     }
 
     /******************************************************************************************************************
@@ -105,8 +96,9 @@ final class Application_v2 implements ApplicationInterface
     {
         return new PsrFactory($this->register);
     }
+
     private function router(): Main
     {
-        return new Main($this->register, $this->psr7Bridge(), $this->server);
+        return new Main($this->register, $this->psr7Bridge(), $this->loader);
     }
 }

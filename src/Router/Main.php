@@ -4,6 +4,7 @@ namespace Xel\Async\Router;
 use DI\Container;
 use DI\DependencyException;
 use DI\NotFoundException;
+use Exception;
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use InvalidArgumentException;
@@ -21,10 +22,13 @@ class Main
      * @var array<int|string,mixed>
      */
     private array $dispatch;
+    private Dispatcher $dispatcher;
 
     public function __construct(
         private readonly Container  $register,
         private readonly PsrFactory $psrFactory,
+        private readonly array $loader,
+
     )
     {}
 
@@ -51,29 +55,30 @@ class Main
         return $globalMiddleware;
     }
 
-    /**
-     * @param array<int|string, mixed> $loader
-     * @param string $method
-     * @param string $uri
-     * @return $this
-     */
-    public function routerMapper(array $loader, string $method, string $uri): static
+    public function routerMapper(): static
     {
-        $router = simpleDispatcher(function (RouteCollector $routeCollector) use ($loader){
-            foreach ($loader as $item){
+        $this->dispatcher = simpleDispatcher(function (RouteCollector $routeCollector){
+            foreach ($this->loader as $item){
                 $class = $item['Class'];
                 $method = $item['Method'];
                 $routeCollector->addRoute($item['RequestMethod'], $item['Uri'], [$class, $method, $item["Middlewares"]]);
             }
         });
-        $this->dispatch = $router->dispatch($method, $uri);
+        return $this;
+    }
+
+    public function dispatch(string $method, string $uri): static
+    {
+        $this->dispatch = $this
+            ->dispatcher
+            ->dispatch($method, $uri);
         return $this;
     }
 
     /**
      * @throws DependencyException
      * @throws NotFoundException
-     * @throws \Exception
+     * @throws Exception
      */
     public function execute(ServerRequestInterface $request, Response $response): void
     {

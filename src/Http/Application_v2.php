@@ -88,7 +88,7 @@ final readonly class Application_v2 implements ApplicationInterface{
         $this->router()
             ->routerMapper()
             ->dispatch($req->getMethod(),$req->getUri())
-            ->execute($req, $response, $this->server);
+            ->execute($req, $response);
     }
 
 
@@ -121,6 +121,6 @@ final readonly class Application_v2 implements ApplicationInterface{
 
     private function router(): Main
     {
-        return new Main($this->register, $this->psr7Bridge(), $this->loader);
+        return new Main($this->register, $this->psr7Bridge(), $this->loader, $this->server);
     }
 }

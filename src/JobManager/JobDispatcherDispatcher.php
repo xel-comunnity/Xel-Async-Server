@@ -20,8 +20,8 @@ final class JobDispatcherDispatcher implements JobDispatcherInterface
 
     public function __construct
     (
-        private Server $server,
-        private Response $response,
+        private readonly Server    $server,
+        private Response           $response,
         private readonly Container $container
     ){}
 
@@ -49,10 +49,7 @@ final class JobDispatcherDispatcher implements JobDispatcherInterface
         return $this;
     }
 
-    /**
-     * @throws DependencyException
-     * @throws NotFoundException
-     */
+
     public function afterExecute(string $job): JobDispatcherDispatcher
     {
         $jobExec  = [

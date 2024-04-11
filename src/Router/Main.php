@@ -12,6 +12,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Swoole\Http\Response;
 use Swoole\Server;
+use Xel\Async\JobManager\JobDispatcherDispatcher;
 use Xel\Async\Middleware\MiddlewareRunner;
 use Xel\Psr7bridge\PsrFactory;
 use Xel\Async\Http\Response as XelResponse;
@@ -29,6 +30,7 @@ class Main
         private readonly Container  $register,
         private readonly PsrFactory $psrFactory,
         private readonly array $loader,
+        private Server $server
 
     )
     {}
@@ -81,7 +83,7 @@ class Main
      * @throws NotFoundException
      * @throws Exception
      */
-    public function execute(ServerRequestInterface $request, Response $response, Server $server): void
+    public function execute(ServerRequestInterface $request, Response $response): void
     {
         switch ($this->dispatch[0]) {
             case Dispatcher::NOT_FOUND:
@@ -104,7 +106,6 @@ class Main
                  * @var ResponseInterface| $bindParam
                  */
                 $bindParam = call_user_func_array($instance, $param);
-
                 // ? Dispatch Middleware
                 $responses = $this->middlewareDispatch($request, $bindParam);
 
@@ -141,6 +142,7 @@ class Main
             $instance->setRequest($request);
             $instance->setResponse($this->responseInterface());
             $instance->setContainer($this->register);
+            $instance->setJobDispatcher($this->jobMaker());
         }
 
         return $object;
@@ -159,6 +161,15 @@ class Main
 
         $data = new MiddlewareRunner($mergeMiddleware, $bindParam);
         return $data->handle($request);
+    }
+
+    /**
+     * @throws DependencyException
+     * @throws NotFoundException
+     */
+    public function jobMaker(): JobDispatcherDispatcher
+    {
+        return new JobDispatcherDispatcher($this->server,$this->responseInterface(),$this->register);
     }
 
 }

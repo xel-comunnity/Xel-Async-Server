@@ -98,7 +98,7 @@ final readonly class Application_v2 implements ApplicationInterface{
 
     public function onTask(Server $server, int $taskId, int $reactorId, $data): bool
     {
-
+        var_dump($data,  new $data());
         try {
             $x = new $data();
             $x->run();

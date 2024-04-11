@@ -29,10 +29,11 @@ final class JobDispatcherDispatcher implements JobDispatcherInterface
      * @throws DependencyException
      * @throws NotFoundException
      */
-    public function doProcess(callable $function):void
+    public function doProcess(callable $function): JobDispatcherDispatcher
     {
         $response = $function($this->response, $this->queryDML());
         $this->responseInterface = $response;
+        return $this;
     }
 
     /**
@@ -59,11 +60,6 @@ final class JobDispatcherDispatcher implements JobDispatcherInterface
         $this->jobBehaviour = $jobExec;
         return $this;
     }
-
-    public function onTask()
-    {}
-    public function onFinish()
-    {}
 
     /**
      * @throws DependencyException

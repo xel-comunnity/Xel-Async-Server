@@ -12,6 +12,7 @@ use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Server;
 use Xel\Async\Contract\ApplicationInterface;
+use Xel\Async\Contract\JobInterface;
 use Xel\Async\Http\Server\Server_v2;
 use Xel\Async\Router\Main;
 use Xel\DB\QueryBuilder\QueryDML;
@@ -96,16 +97,29 @@ final readonly class Application_v2 implements ApplicationInterface{
      * Server Async Task Dispatcher
      ******************************************************************************************************************/
 
+    /**
+     * @param Server $server
+     * @param int $taskId
+     * @param int $reactorId
+     * @param $data
+     * @return bool
+     * @throws DependencyException
+     * @throws NotFoundException
+     */
     public function onTask(Server $server, int $taskId, int $reactorId, $data): bool
     {
-        var_dump($data,  new $data());
-        try {
-            $x = new $data();
-            $x->run();
-            return true;
-        }catch (Exception $e){
-            return $e->getMessage();
-        }
+       $instance =  $this->register->get($data);
+
+       if($instance instanceof JobInterface){
+           try {
+              $instance->process();
+               return true;
+           }catch (Exception $e){
+               return $e->getMessage();
+           }
+       }
+       return false;
+
     }
 
     public function onFinish(Server $server, int $taskId, $data): void

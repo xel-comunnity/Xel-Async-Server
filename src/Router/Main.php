@@ -11,6 +11,7 @@ use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Swoole\Http\Response;
+use Swoole\Server;
 use Xel\Async\Middleware\MiddlewareRunner;
 use Xel\Psr7bridge\PsrFactory;
 use Xel\Async\Http\Response as XelResponse;
@@ -80,7 +81,7 @@ class Main
      * @throws NotFoundException
      * @throws Exception
      */
-    public function execute(ServerRequestInterface $request, Response $response): void
+    public function execute(ServerRequestInterface $request, Response $response, Server $server): void
     {
         switch ($this->dispatch[0]) {
             case Dispatcher::NOT_FOUND:
@@ -100,7 +101,7 @@ class Main
                     $param[] = $value;
                 }
                 /***
-                 * @var ResponseInterface $bindParam
+                 * @var ResponseInterface| $bindParam
                  */
                 $bindParam = call_user_func_array($instance, $param);
 
@@ -159,4 +160,5 @@ class Main
         $data = new MiddlewareRunner($mergeMiddleware, $bindParam);
         return $data->handle($request);
     }
+
 }

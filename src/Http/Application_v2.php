@@ -10,20 +10,22 @@ use Swoole\Database\PDOConfig;
 use Swoole\Database\PDOPool;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
+use Swoole\Server;
 use Xel\Async\Contract\ApplicationInterface;
 use Xel\Async\Http\Server\Server_v2;
 use Xel\Async\Router\Main;
 use Xel\DB\QueryBuilder\QueryDML;
 use Xel\Psr7bridge\PsrFactory;
 
-final class Application_v2 implements ApplicationInterface
-{private array $asyncTask;
+final readonly class Application_v2 implements ApplicationInterface{
+
+    public Server $server;
     public function __construct
     (
-        private readonly array     $config,
-        private readonly array     $loader,
-        private readonly array     $dbConfig,
-        private readonly Container $register,
+        private array     $config,
+        private array     $loader,
+        private array     $dbConfig,
+        private Container $register,
     )
     {}
 
@@ -32,10 +34,17 @@ final class Application_v2 implements ApplicationInterface
         Server_v2::init($this->config);
         $server = Server_v2::getServer();
 
+        // Init Server
+        $this->server = $server;
+
         // ? server start
         $server->on('Start', [$this, 'onStart']);
         $server->on('WorkerStart', [$this, 'onWorkerStart']);
         $server->on('Request', [$this, 'onRequest']);
+
+        // ? Task Deployment
+        $server->on('task', [$this, 'onTask']);
+        $server->on('finish', [$this, 'onFinish']);
         $server->start();
 
     }
@@ -79,8 +88,28 @@ final class Application_v2 implements ApplicationInterface
         $this->router()
             ->routerMapper()
             ->dispatch($req->getMethod(),$req->getUri())
-            ->execute($req, $response);
+            ->execute($req, $response, $this->server);
     }
+
+
+    /******************************************************************************************************************
+     * Server Async Task Dispatcher
+     ******************************************************************************************************************/
+
+    public function onTask(Server $server, int $taskId, int $reactorId, $data): bool
+    {
+
+        try {
+            $x = new $data();
+            $x->run();
+            return true;
+        }catch (Exception $e){
+            return $e->getMessage();
+        }
+    }
+
+    public function onFinish(Server $server, int $taskId, $data): void
+    {}
 
     /******************************************************************************************************************
      * Server Utility Section

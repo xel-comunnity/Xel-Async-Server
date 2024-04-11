@@ -90,53 +90,73 @@ class Main
                 $response->status('405', "NOT ALLOWED");
                 break;
             case Dispatcher::FOUND:
-                $abstractClass = $this->register->get("AbstractService");
-                [$class,$method] = $this->dispatch[1];
+                // ? process Dispatch router class which founded
+                $instance = $this->instanceMaker($request);
                 $vars = $this->dispatch[2];
 
-                $param = [];
-
-                if (!class_exists($class)) {
-                    throw new InvalidArgumentException('Invalid class name');
-                }
-
-                if (!method_exists($class, $method)) {
-                    throw new InvalidArgumentException('Invalid method name');
-                }
-
-                // ? Create an instance of $class
-                $instance = $this->register->make($class, [$request, $this->responseInterface(), $this->register]);
-                $object = [$instance, $method];
-
-                /**
-                 * Injecting Request, Response Interface, Container
-                 */
-//                if ($instance instanceof $abstractClass){
-//                    $instance->setRequest($request);
-//                    $instance->setResponse($this->responseInterface());
-//                    $instance->setContainer($this->register);
-//                }
-
                 // ? Inject response as param to handle return value
+                $param = [];
                 foreach ($vars as $value) {
                     $param[] = $value;
                 }
-
-                // ? execute middleware stack
-                $middlewares = $this->dispatch[1][2];
-                $mergeMiddleware = array_merge($this->globalMiddleware(), $middlewares);
-
                 /***
                  * @var ResponseInterface $bindParam
                  */
-                $bindParam = call_user_func_array($object, $param);
-                $data = new MiddlewareRunner($mergeMiddleware, $bindParam);
-                $responses = $data->handle($request);
+                $bindParam = call_user_func_array($instance, $param);
+
+                // ? Dispatch Middleware
+                $responses = $this->middlewareDispatch($request, $bindParam);
 
                 // ? merge Result of Response
                 $this->psrFactory->connectResponse($responses, $response);
         }
     }
 
+    /**
+     * @throws DependencyException
+     * @throws NotFoundException
+     */
+    private function instanceMaker(ServerRequestInterface $request): array
+    {
+        $abstractClass = $this->register->get("AbstractService");
+        [$class,$method] = $this->dispatch[1];
 
+        if (!class_exists($class)) {
+            throw new InvalidArgumentException('Invalid class name');
+        }
+
+        if (!method_exists($class, $method)) {
+            throw new InvalidArgumentException('Invalid method name');
+        }
+
+        // ? Create an instance of $class
+        $instance = new $class();
+        $object = [$instance, $method];
+
+        /**
+         * Injecting Request, Response Interface, Container
+         */
+        if ($instance instanceof $abstractClass){
+            $instance->setRequest($request);
+            $instance->setResponse($this->responseInterface());
+            $instance->setContainer($this->register);
+        }
+
+        return $object;
+    }
+
+    /**
+     * @throws DependencyException
+     * @throws NotFoundException
+     * @throws Exception
+     */
+    private function middlewareDispatch(ServerRequestInterface $request, ResponseInterface|false $bindParam): ResponseInterface
+    {
+        // ? execute middleware stack
+        $middlewares = $this->dispatch[1][2];
+        $mergeMiddleware = array_merge($this->globalMiddleware(), $middlewares);
+
+        $data = new MiddlewareRunner($mergeMiddleware, $bindParam);
+        return $data->handle($request);
+    }
 }

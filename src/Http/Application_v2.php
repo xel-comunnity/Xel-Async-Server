@@ -6,30 +6,24 @@ use DI\Container;
 use DI\DependencyException;
 use DI\NotFoundException;
 use Exception;
-use PDO;
 use Swoole\Database\PDOConfig;
 use Swoole\Database\PDOPool;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
-use Swoole\Server;
 use Xel\Async\Contract\ApplicationInterface;
-use Xel\Async\Http\Server\QueryBuildersManager;
 use Xel\Async\Http\Server\Server_v2;
 use Xel\Async\Router\Main;
 use Xel\DB\QueryBuilder\QueryDML;
-use Xel\DB\XgenConnector;
 use Xel\Psr7bridge\PsrFactory;
 
 final class Application_v2 implements ApplicationInterface
-{
-    private Server $server;
-    private array $asyncTask;
+{private array $asyncTask;
     public function __construct
     (
-        private array $config,
-        private array $loader,
-        private array $dbConfig,
-        private Container $register,
+        private readonly array     $config,
+        private readonly array     $loader,
+        private readonly array     $dbConfig,
+        private readonly Container $register,
     )
     {}
 
@@ -37,7 +31,6 @@ final class Application_v2 implements ApplicationInterface
     {
         Server_v2::init($this->config);
         $server = Server_v2::getServer();
-        $this->server = $server;
 
         // ? server start
         $server->on('Start', [$this, 'onStart']);

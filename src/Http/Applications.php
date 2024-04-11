@@ -11,7 +11,7 @@ use Xel\Async\Router\Main;
 use Xel\DB\XgenConnector;
 use Xel\Psr7bridge\PsrFactory;
 
-class Applications implements ApplicationInterface
+readonly class Applications implements ApplicationInterface
 {
     public function __construct
     (
@@ -31,7 +31,7 @@ class Applications implements ApplicationInterface
         $instance = new Servers($this->config);
         // ? initial Psr Bridge Http Request & Response
         $psrBridge = new PsrFactory($this->register);
-        $router = new Main($this->register, $psrBridge);
+        $router = new Main($this->register, $psrBridge, $this->loader);
 
         /**
          * On workerStart

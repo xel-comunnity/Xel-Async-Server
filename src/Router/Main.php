@@ -12,7 +12,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Swoole\Http\Response;
 use Swoole\Server;
-use Xel\Async\JobManager\JobDispatcherDispatcher;
+use Xel\Async\CentralManager\CentralManagerRunner;
 use Xel\Async\Middleware\MiddlewareRunner;
 use Xel\Psr7bridge\PsrFactory;
 use Xel\Async\Http\Response as XelResponse;
@@ -30,7 +30,7 @@ class Main
         private readonly Container  $register,
         private readonly PsrFactory $psrFactory,
         private readonly array $loader,
-        private Server $server
+        private readonly Server $server
 
     )
     {}
@@ -139,10 +139,9 @@ class Main
          * Injecting Request, Response Interface, Container
          */
         if ($instance instanceof $abstractClass){
-            $instance->setRequest($request);
-            $instance->setResponse($this->responseInterface());
-            $instance->setContainer($this->register);
-            $instance->setJobDispatcher($this->jobMaker());
+            $instance->serverRequest = $request;
+            $instance->container = $this->register;
+            $instance->jobDispatcherDispatcher = $this->jobMaker();
         }
 
         return $object;
@@ -167,9 +166,9 @@ class Main
      * @throws DependencyException
      * @throws NotFoundException
      */
-    public function jobMaker(): JobDispatcherDispatcher
+    public function jobMaker(): CentralManagerRunner
     {
-        return new JobDispatcherDispatcher($this->server,$this->responseInterface(),$this->register);
+        return new CentralManagerRunner($this->server,$this->responseInterface(),$this->register);
     }
 
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace Xel\Async\JobManager;
+namespace Xel\Async\CentralManager;
 
 use DI\Container;
 use DI\DependencyException;
@@ -8,11 +8,11 @@ use DI\NotFoundException;
 use Exception;
 use Psr\Http\Message\ResponseInterface;
 use Swoole\Server;
-use Xel\Async\Contract\JobDispatcherInterface;
+use Xel\Async\Contract\CentralManagerInterface;
 use Xel\Async\Http\Response;
 use Xel\DB\QueryBuilder\QueryDML;
 
-final class JobDispatcherDispatcher implements JobDispatcherInterface
+final class CentralManagerRunner implements CentralManagerInterface
 {
     private array $jobBehaviour;
     private ResponseInterface $responseInterface;
@@ -37,7 +37,7 @@ final class JobDispatcherDispatcher implements JobDispatcherInterface
      * @throws DependencyException
      * @throws NotFoundException
      */
-    public function doProcess(callable $function): JobDispatcherDispatcher
+    public function doProcess(callable $function): CentralManagerRunner
     {
         $response = $function($this->response, $this->queryDML());
         $this->responseInterface = $response;
@@ -48,18 +48,19 @@ final class JobDispatcherDispatcher implements JobDispatcherInterface
      * @throws DependencyException
      * @throws NotFoundException
      */
-    public function beforeExecute(string $job): JobDispatcherDispatcher
+    public function beforeExecute(string $job): CentralManagerRunner
     {
         $jobExec  = [
           'behaviour' => 'before',
           'instance' =>   $this->container->make($job)
         ];
+
         $this->jobBehaviour = $jobExec;
         return $this;
     }
 
 
-    public function afterExecute(string $job): JobDispatcherDispatcher
+    public function afterExecute(string $job): CentralManagerRunner
     {
         $jobExec  = [
             'behaviour' => 'after',
@@ -79,8 +80,10 @@ final class JobDispatcherDispatcher implements JobDispatcherInterface
             try {
                 // ? run the process
                 $response = $this->responseInterface;
+
                 // ? run the job after the process
-               $this->server->task($this->jobBehaviour['instance']);
+                $this->server->task($this->jobBehaviour['instance']);
+
                 // ? return result
                 return $response;
             } catch (Exception $e) {

@@ -113,11 +113,14 @@ final readonly class Application_v2 implements ApplicationInterface{
        if($instance instanceof JobInterface){
            try {
               $instance->process();
+              var_dump(true);
                return true;
            }catch (Exception $e){
+               var_dump(false);
                return $e->getMessage();
            }
        }
+        var_dump('provided aer');
        return false;
 
     }

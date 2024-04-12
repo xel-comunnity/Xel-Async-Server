@@ -6,7 +6,6 @@ use DI\Container;
 use DI\DependencyException;
 use DI\NotFoundException;
 use Exception;
-use phpDocumentor\Reflection\Types\Callable_;
 use Psr\Http\Message\ResponseInterface;
 use Swoole\Server;
 use Xel\Async\Contract\JobDispatcherInterface;
@@ -24,6 +23,15 @@ final class JobDispatcherDispatcher implements JobDispatcherInterface
         private Response           $response,
         private readonly Container $container
     ){}
+
+    /**
+     * @throws DependencyException
+     * @throws NotFoundException
+     */
+    public function workSpace(callable $function):ResponseInterface
+    {
+        return $function($this->response, $this->queryDML());
+    }
 
     /**
      * @throws DependencyException

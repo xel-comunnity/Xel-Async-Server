@@ -14,11 +14,11 @@ use Swoole\Server;
 use Xel\Async\Contract\ApplicationInterface;
 use Xel\Async\Contract\JobInterface;
 use Xel\Async\Http\Server\Server_v2;
-use Xel\Async\Router\Main;
+use Xel\Async\Router\Main_v2;
 use Xel\DB\QueryBuilder\QueryDML;
 use Xel\Psr7bridge\PsrFactory;
 
-final readonly class Application_v2 implements ApplicationInterface{
+final readonly class Application_v3 implements ApplicationInterface{
 
     public Server $server;
     public function __construct
@@ -85,11 +85,10 @@ final readonly class Application_v2 implements ApplicationInterface{
      */
     public function onRequest(Request $request, Response $response): void
     {
-        $req = $this->psr7Bridge()->connectRequest($request);
         $this->router()
             ->routerMapper()
-            ->dispatch($req->getMethod(),$req->getUri())
-            ->execute($req, $response);
+            ->dispatch($request->server['request_method'],$request->server['request_uri'])
+            ->execute($request, $response);
     }
 
 
@@ -108,16 +107,16 @@ final readonly class Application_v2 implements ApplicationInterface{
      */
     public function onTask(Server $server, int $taskId, int $reactorId, $data): bool
     {
-       $instance =  $this->register->get($data);
-       if($instance instanceof JobInterface){
-           try {
-               $instance->process();
-               return true;
-           }catch (Exception $e){
-               return $e->getMessage();
-           }
-       }
-       return false;
+        $instance =  $this->register->get($data);
+        if($instance instanceof JobInterface){
+            try {
+                $instance->process();
+                return true;
+            }catch (Exception $e){
+                return $e->getMessage();
+            }
+        }
+        return false;
 
     }
 
@@ -132,8 +131,8 @@ final readonly class Application_v2 implements ApplicationInterface{
         return new PsrFactory($this->register);
     }
 
-    private function router(): Main
+    private function router(): Main_v2
     {
-        return new Main($this->register, $this->psr7Bridge(), $this->loader, $this->server);
+        return new Main_v2($this->register, $this->loader, $this->server);
     }
 }

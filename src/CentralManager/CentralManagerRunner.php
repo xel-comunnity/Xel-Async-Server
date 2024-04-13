@@ -7,22 +7,33 @@ use DI\DependencyException;
 use DI\NotFoundException;
 use Exception;
 use Psr\Http\Message\ResponseInterface;
+use Swoole\Http\Response;
 use Swoole\Server;
 use Xel\Async\Contract\CentralManagerInterface;
-use Xel\Async\Http\Response;
 use Xel\DB\QueryBuilder\QueryDML;
 
 final class CentralManagerRunner implements CentralManagerInterface
 {
     private array $jobBehaviour;
-    private ResponseInterface $responseInterface;
 
-    public function __construct
+    private mixed $responses;
+
+    private Server    $server;
+    private Response  $response;
+    private Container $container;
+
+    public function __invoke
     (
-        private readonly Server    $server,
-        private Response           $response,
-        private readonly Container $container
-    ){}
+        Server    $server,
+        Response  $response,
+        Container $container
+    ): CentralManagerRunner
+    {
+      $this->server = $server;
+      $this->response = $response;
+      $this->container = $container;
+      return $this;
+    }
 
     /**
      * @throws DependencyException
@@ -39,8 +50,8 @@ final class CentralManagerRunner implements CentralManagerInterface
      */
     public function doProcess(callable $function): CentralManagerRunner
     {
-        $response = $function($this->response, $this->queryDML());
-        $this->responseInterface = $response;
+
+        $this->responses = $function($this->response, $this->queryDML());
         return $this;
     }
 
@@ -70,24 +81,23 @@ final class CentralManagerRunner implements CentralManagerInterface
         return $this;
     }
 
-    /**
-     * @throws DependencyException
-     * @throws NotFoundException
-     */
-    public function dispatch(): ResponseInterface
+
+    public function dispatch():void
     {
         if ($this->jobBehaviour['behaviour'] === 'before'){
             try {
                 // ? run the process
-                $response = $this->responseInterface;
+                $response = $this->responses;
 
                 // ? run the job after the process
                 $this->server->task($this->jobBehaviour['instance']);
-
                 // ? return result
-                return $response;
+
+                $this->response->setStatusCode(200);
+                $this->response->end(json_encode($response));
             } catch (Exception $e) {
-                return $this->response->json(["error" => $e->getMessage()], 422);
+                $this->response->setStatusCode(422);
+                $this->response->end(json_encode(["error" => $e->getMessage()]));
             }
 
 
@@ -95,10 +105,14 @@ final class CentralManagerRunner implements CentralManagerInterface
             // ? run the job before the process
             $this->server->task($this->jobBehaviour['instance']);
             try {
-                // ? run the process
-                return $this->responseInterface;
+                $response = $this->responses;
+
+                // ? return result
+                $this->response->setStatusCode(200);
+                $this->response->end(json_encode($response));
             } catch (Exception $e) {
-                return $this->response->json(["error" => $e->getMessage()], 422);
+                $this->response->setStatusCode(422);
+                $this->response->end(json_encode(["error" => $e->getMessage()]));
             }
         }
     }

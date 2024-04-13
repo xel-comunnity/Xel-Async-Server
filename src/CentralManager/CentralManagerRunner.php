@@ -35,13 +35,16 @@ final class CentralManagerRunner implements CentralManagerInterface
       return $this;
     }
 
+
     /**
      * @throws DependencyException
      * @throws NotFoundException
      */
-    public function workSpace(callable $function):ResponseInterface
+    public function workSpace(callable $function):void
     {
-        return $function($this->response, $this->queryDML());
+        $response = $function($this->response, $this->queryDML());
+        $this->response->setStatusCode(200);
+        $this->response->end(json_encode($response));
     }
 
     /**

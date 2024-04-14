@@ -14,8 +14,9 @@ use Xel\DB\QueryBuilder\QueryDML;
 final class CentralManagerRunner implements CentralManagerInterface
 {
     private array $jobBehaviour;
-
+    private array $currentModel;
     private mixed $responses;
+    private bool $useQueryBuilder = true;
 
     private Server    $server;
     private Responses  $response;
@@ -33,7 +34,9 @@ final class CentralManagerRunner implements CentralManagerInterface
       $this->container = $container;
       return $this;
     }
-
+    /*******************************************************************************************************************
+     * Regular Operation
+     ******************************************************************************************************************/
 
     /**
      * @throws DependencyException
@@ -41,8 +44,35 @@ final class CentralManagerRunner implements CentralManagerInterface
      */
     public function workSpace(callable $function):void
     {
+        if($this->useQueryBuilder === false){
+            $function($this->response, ...$this->currentModel);
+        }
+
         $function($this->response, $this->queryDML());
     }
+
+    /**
+     * @throws DependencyException
+     * @throws NotFoundException
+     */
+    public function loadBaseData(...$BaseData, ): CentralManagerRunner
+    {
+        $list = $this->container->get('basedata');
+        $param = [];
+
+        foreach ($BaseData as $value){
+            $param[$value] = new $list[$value]($this->queryDML());
+        }
+
+        $this->currentModel = $param;
+        $this->useQueryBuilder = false;
+        return $this;
+    }
+
+
+    /*******************************************************************************************************************
+     *
+     ******************************************************************************************************************/
 
     /**
      * @throws DependencyException
@@ -111,6 +141,9 @@ final class CentralManagerRunner implements CentralManagerInterface
             }
         }
     }
+    /*******************************************************************************************************************
+     *
+     ******************************************************************************************************************/
 
     /**
      * @throws DependencyException

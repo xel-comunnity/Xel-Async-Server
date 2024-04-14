@@ -42,8 +42,6 @@ class Main_v2
         return $globalMiddleware;
     }
 
-
-
     public function routerMapper(): static
     {
         $this->dispatcher = simpleDispatcher(function (RouteCollector $routeCollector){
@@ -97,6 +95,7 @@ class Main_v2
                 }
 
                 $bindParam = call_user_func_array($instance, $param);
+
                 // ? merge Result of Response
                 $response->end($bindParam);
         }

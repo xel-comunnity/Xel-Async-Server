@@ -6,10 +6,9 @@ use DI\Container;
 use DI\DependencyException;
 use DI\NotFoundException;
 use Exception;
-use Psr\Http\Message\ResponseInterface;
-use Swoole\Http\Response;
 use Swoole\Server;
 use Xel\Async\Contract\CentralManagerInterface;
+use Xel\Async\Http\Responses;
 use Xel\DB\QueryBuilder\QueryDML;
 
 final class CentralManagerRunner implements CentralManagerInterface
@@ -19,13 +18,13 @@ final class CentralManagerRunner implements CentralManagerInterface
     private mixed $responses;
 
     private Server    $server;
-    private Response  $response;
+    private Responses  $response;
     private Container $container;
 
     public function __invoke
     (
         Server    $server,
-        Response  $response,
+        Responses  $response,
         Container $container
     ): CentralManagerRunner
     {
@@ -42,9 +41,7 @@ final class CentralManagerRunner implements CentralManagerInterface
      */
     public function workSpace(callable $function):void
     {
-        $response = $function($this->response, $this->queryDML());
-        $this->response->setStatusCode(200);
-        $this->response->end(json_encode($response));
+        $function($this->response, $this->queryDML());
     }
 
     /**
@@ -91,16 +88,12 @@ final class CentralManagerRunner implements CentralManagerInterface
             try {
                 // ? run the process
                 $response = $this->responses;
-
                 // ? run the job after the process
                 $this->server->task($this->jobBehaviour['instance']);
                 // ? return result
-
-                $this->response->setStatusCode(200);
-                $this->response->end(json_encode($response));
+                $this->response->json($response, false, 200);
             } catch (Exception $e) {
-                $this->response->setStatusCode(422);
-                $this->response->end(json_encode(["error" => $e->getMessage()]));
+                $this->response->json(["error" => $e->getMessage()], false, 200);
             }
 
 
@@ -111,11 +104,10 @@ final class CentralManagerRunner implements CentralManagerInterface
                 $response = $this->responses;
 
                 // ? return result
-                $this->response->setStatusCode(200);
-                $this->response->end(json_encode($response));
+                $this->response->json($response, false, 200);
             } catch (Exception $e) {
-                $this->response->setStatusCode(422);
-                $this->response->end(json_encode(["error" => $e->getMessage()]));
+                $this->response->json(["error" => $e->getMessage()], false, 200);
+
             }
         }
     }

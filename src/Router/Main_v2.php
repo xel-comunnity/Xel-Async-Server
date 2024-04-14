@@ -12,6 +12,7 @@ use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Server;
 use Xel\Async\CentralManager\CentralManagerRunner;
+use Xel\Async\Http\Responses;
 use Xel\Async\Middleware\MiddlewareDispatcher;
 use function FastRoute\simpleDispatcher;
 
@@ -85,7 +86,7 @@ class Main_v2
                 $middleware->handle($request);
 
                 // ? process Dispatch router class which founded
-                $jobMaker = $this->jobMaker()($this->server, $response, $this->register);
+                $jobMaker = $this->jobMaker()($this->server, $this->responseMaker()($response), $this->register);
                 $instance = $this->instanceMaker($request, $jobMaker);
                 $vars = $this->dispatch[2];
 
@@ -144,5 +145,10 @@ class Main_v2
     public function jobMaker(): CentralManagerRunner
     {
         return new CentralManagerRunner();
+    }
+
+    public function responseMaker(): Responses
+    {
+        return new Responses();
     }
 }

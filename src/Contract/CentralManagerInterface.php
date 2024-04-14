@@ -10,7 +10,6 @@ interface CentralManagerInterface
      *******************************************************************************************************************/
     public function workSpace(callable $function):void;
 
-
     /*******************************************************************************************************************
      * Dispatch Async Task with process
      *******************************************************************************************************************/
@@ -30,6 +29,4 @@ interface CentralManagerInterface
     // ? file compressor (based on mime type)
     // ? store file handler
     // ? Secure post request Handler
-
-
 }

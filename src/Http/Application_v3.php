@@ -11,6 +11,7 @@ use Swoole\Database\PDOPool;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Server;
+use Swoole\Server\Task;
 use Xel\Async\Contract\ApplicationInterface;
 use Xel\Async\Contract\JobInterface;
 use Xel\Async\Http\Server\Server_v2;
@@ -98,25 +99,23 @@ final readonly class Application_v3 implements ApplicationInterface{
 
     /**
      * @param Server $server
-     * @param int $taskId
-     * @param int $reactorId
-     * @param $data
-     * @return bool
+     * @param Task $task
+     * @return void
      * @throws DependencyException
      * @throws NotFoundException
      */
-    public function onTask(Server $server, int $taskId, int $reactorId, $data): bool
+    public function onTask(Server $server, Server\Task $task): void
     {
-        $instance =  $this->register->get($data);
+        $instance =  $this->register->get($task->data);
         if($instance instanceof JobInterface){
             try {
                 $instance->process();
-                return true;
+                $task->finish(true);
             }catch (Exception $e){
-                return $e->getMessage();
+                $task->finish($e->getMessage());
             }
         }
-        return false;
+
 
     }
 

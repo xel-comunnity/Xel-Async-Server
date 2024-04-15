@@ -139,17 +139,18 @@ final readonly class Application_v3 implements ApplicationInterface {
     /******************************************************************************************************************
      * Server Utility Section
      ******************************************************************************************************************/
-    private function router(): void
+    public function router(): Application_v3
     {
          $instance =  new Main_v2($this->register, $this->loader, $this->server);
          $this->main_v2 = $instance;
+         return $this;
     }
 
     /**
      * @throws DependencyException
      * @throws NotFoundException
      */
-    public function gemstoneLimiter():void
+    public function gemstoneLimiter(): Application_v3
     {
         $config = $this->register->get('gemstone');
 
@@ -160,5 +161,6 @@ final readonly class Application_v3 implements ApplicationInterface {
             $config['gemstone_limiter']['interval']
         );
         $this->bucketLimiter = $instance;
+        return $this;
     }
 }

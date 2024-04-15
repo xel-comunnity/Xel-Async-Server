@@ -23,13 +23,21 @@ class Main_v2
      */
     private array $dispatch;
     private Dispatcher $dispatcher;
+    private  Server $server;
 
     public function __construct(
         private readonly Container  $register,
         private readonly array $loader,
-        private readonly Server $server,
+
     )
     {}
+
+    public function __invoke(Server $server): static
+    {
+        $this->server = $server;
+        return $this;
+    }
+
     /**
      * @return class-string[]
      * @throws DependencyException

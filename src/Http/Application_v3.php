@@ -88,15 +88,16 @@ final readonly class Application_v3 implements ApplicationInterface {
      */
     public function onRequest(Request $request, Response $response): void
     {
+        $router = $this->main_v2;
         $config = $this->register->get('gemstone');
         if ($config['gemstone_limiter']['condition'] === false){
-            $this->main_v2
+            $router($this->server)
                 ->routerMapper()
                 ->dispatch($request->server['request_method'],$request->server['request_uri'])
                 ->execute($request, $response);
         }else{
             if ($this->bucketLimiter->isPermitted()){
-                $this->main_v2
+                $router($this->server)
                     ->routerMapper()
                     ->dispatch($request->server['request_method'],$request->server['request_uri'])
                     ->execute($request, $response);
@@ -141,7 +142,7 @@ final readonly class Application_v3 implements ApplicationInterface {
      ******************************************************************************************************************/
     public function router(): Application_v3
     {
-         $instance =  new Main_v2($this->register, $this->loader, $this->server);
+         $instance =  new Main_v2($this->register, $this->loader);
          $this->main_v2 = $instance;
          return $this;
     }

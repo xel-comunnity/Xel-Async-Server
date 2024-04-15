@@ -27,15 +27,11 @@ class TokenBucketLimiter
 
     public function refill(): void
     {
-        if ($this->lastRefill() >= $this->lastRefill){
-            $storeToken = floor($this->lastRefill() / $this->interval) * $this->refillTokenRate;
+        $timeSinceLastRefill = time() - $this->lastRefill;
+        if ($timeSinceLastRefill >= $this->interval){
+            $storeToken = floor($timeSinceLastRefill / $this->interval) * $this->refillTokenRate;
             $this->currentTokens = min($this->maxTokens , $this->currentTokens + $storeToken);
             $this->lastRefill = time();
         }
-    }
-
-    private function lastRefill(): int
-    {
-        return time() - $this->lastRefill;
     }
 }

@@ -12,6 +12,7 @@ class TokenBucketLimiter
         private readonly int   $interval,
     ){
         $this->lastRefill = time();
+        $this->currentTokens = $this->maxTokens;
     }
 
     public function isPermitted(): bool

@@ -12,6 +12,7 @@ use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Server;
 use Swoole\Server\Task;
+use Throwable;
 use Xel\Async\Contract\ApplicationInterface;
 use Xel\Async\Contract\JobInterface;
 use Xel\Async\Gemstone\Exception\BlackListException;
@@ -94,24 +95,27 @@ final readonly class Application_v3 implements ApplicationInterface {
     {
         $router = $this->main_v2;
         $config = $this->register->get('gemstone');
+
         if ($config['gemstone_limiter']['condition'] === false){
             $router($this->server)
                 ->routerMapper()
                 ->dispatch($request->server['request_method'],$request->server['request_uri'])
                 ->execute($request, $response);
-        }else{
-            try {
-                if ($this->bucketLimiter->isAllowed($request, $response)){
-                    $router($this->server)
-                        ->routerMapper()
-                        ->dispatch($request->server['request_method'],$request->server['request_uri'])
-                        ->execute($request, $response);
-                }
-            }catch (Exception $e){
-                $response->end(json_encode([
-                    "error" => $e->getMessage(),
-                ]));
+        }
+
+        try {
+            if ($this->bucketLimiter->isAllowed($request, $response)) {
+                $router($this->server)
+                    ->routerMapper()
+                    ->dispatch($request->server['request_method'],$request->server['request_uri'])
+                    ->execute($request, $response);
             }
+        } catch (Exception $e) {
+            $response->status(403);
+            $response->end($e->getMessage());
+        } catch (Throwable $e) {
+            $response->status(500);
+            $response->end("An error occurred: " . $e->getMessage());
         }
     }
 

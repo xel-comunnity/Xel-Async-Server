@@ -56,7 +56,6 @@ class SlidingWindowLimiter
         }
 
         if ($blocked) {
-            $response->setStatusCode(403, 'Forbidden Access');
             throw new BlackListException("IP address $key is blocked.");
         }
 
@@ -66,13 +65,11 @@ class SlidingWindowLimiter
         }
 
         if ($requests >= $this->maxRequests) {
-            $response->setStatusCode(429, 'Token Reach Limit because of too many request ');
             throw new Exception("Too many requests. Please try again in a few minutes.");
         }
 
         if ($requests >= $this->maxRequestsPerMinute) {
             $this->blacklistIp($key);
-            $response->setStatusCode(403, 'Forbidden Access');
             throw new Exception("Too many requests per minute. IP address $key has been blocked.");
         }
 

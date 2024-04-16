@@ -108,11 +108,8 @@ final readonly class Application_v3 implements ApplicationInterface {
                     ->execute($request, $response);
             }
         } catch (Exception $e) {
-            $response->status(429);
+            $response->status($e->getCode(), $e->getMessage());
             $response->end($e->getMessage());
-        } catch (Throwable $e) {
-            $response->status(500);
-            $response->end("An error occurred: " . $e->getMessage());
         }
     }
 

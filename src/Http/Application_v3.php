@@ -15,10 +15,7 @@ use Swoole\Server\Task;
 use Throwable;
 use Xel\Async\Contract\ApplicationInterface;
 use Xel\Async\Contract\JobInterface;
-use Xel\Async\Gemstone\Exception\BlackListException;
-use Xel\Async\Gemstone\Exception\TooManyRequestException;
 use Xel\Async\Gemstone\SlidingWindowLimiter;
-use Xel\Async\Gemstone\TokenBucketLimiter;
 use Xel\Async\Http\Server\Server_v2;
 use Xel\Async\Router\Main_v2;
 use Xel\DB\QueryBuilder\QueryDML;
@@ -111,7 +108,7 @@ final readonly class Application_v3 implements ApplicationInterface {
                     ->execute($request, $response);
             }
         } catch (Exception $e) {
-            $response->status(403);
+            $response->status(429);
             $response->end($e->getMessage());
         } catch (Throwable $e) {
             $response->status(500);
@@ -168,8 +165,7 @@ final readonly class Application_v3 implements ApplicationInterface {
         (
             $config['gemstone_limiter']['max_token'],
             $config['gemstone_limiter']['interval'],
-            $config['gemstone_limiter']['anomaly_request_reach'],
-            $config['gemstone_limiter']['black_list_path'],
+            $config['gemstone_limiter']['block_ip'],
         );
 
         $this->bucketLimiter = $instance;

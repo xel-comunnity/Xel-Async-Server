@@ -12,11 +12,13 @@ class SlidingWindowLimiter
     private Table $table;
     private int $windowSize;
     private int $maxRequests;
-    private int $maxRequestsPerMinute;
-    private string $blacklistedIpsFile;
+    private ?int $maxRequestsPerMinute = null;
+    private ?string $blacklistedIpsFile = null;
+
+    private array $black_list;
     private array $blacklistedIps;
 
-    public function __construct(int $maxRequests, int $windowSize, int $maxRequestsPerMinute, string $blacklistedIpsFile)
+    public function __construct(int $maxRequests, int $windowSize, array $blacklist)
     {
         $this->table = new Table(1024);
         $this->table->column('requests', Table::TYPE_INT, 8);
@@ -26,11 +28,12 @@ class SlidingWindowLimiter
 
         $this->windowSize = $windowSize;
         $this->maxRequests = $maxRequests;
-        $this->maxRequestsPerMinute = $maxRequestsPerMinute;
-        $this->blacklistedIpsFile = $blacklistedIpsFile;
+
+        $this->black_list = $blacklist;
+        $this->maxRequestsPerMinute = $blacklist[0] ?? null;
+        $this->blacklistedIpsFile = $blacklist[1] ?? null;
         $this->blacklistedIps = $this->loadBlacklistedIps();
     }
-
 
     /**
      * @throws Exception
@@ -39,9 +42,9 @@ class SlidingWindowLimiter
     {
         $key = $request->header['x-forwarded-for'] ?? $request->server['remote_addr'];
 
-        if (in_array($key, $this->blacklistedIps, true)) {
-            $response->setStatusCode(403, 'Forbidden Access');
-            throw new BlackListException("IP address $key is blocked.");
+        if (in_array($key,$this->blacklistedIps,true)){
+            throw new Exception("IP address $key is blocked.", 403);
+
         }
 
         $currentTime = time();
@@ -55,8 +58,10 @@ class SlidingWindowLimiter
             $blocked = $this->table->get($key, 'blocked');
         }
 
+
+
         if ($blocked) {
-            throw new BlackListException("IP address $key is blocked.");
+            throw new Exception("IP address $key is blocked.", 403);
         }
 
         if ($currentTime - $lastResetTime > $this->windowSize) {
@@ -64,17 +69,37 @@ class SlidingWindowLimiter
             return true;
         }
 
-        if ($requests >= $this->maxRequests) {
-            throw new Exception("Too many requests. Please try again in a few minutes.");
-        }
-
-        if ($requests >= $this->maxRequestsPerMinute) {
-            $this->blacklistIp($key);
-            throw new Exception("Too many requests per minute. IP address $key has been blocked.");
+        // a sample test v10
+        if (count($this->black_list) > 0){
+            $this->blockIp($requests, $key);
+        }else{
+            $this->passIp($requests, $key);
         }
 
         $this->table->incr($key, 'requests', 1);
         return true;
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function blockIp($requests, $key): void
+    {
+        if ($requests >= $this->maxRequestsPerMinute) {
+            $this->blacklistIp($key);
+            throw new Exception("Too many requests per minute. IP address $key has been blocked.", 403);
+        }
+
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function passIp($requests, $key): void
+    {
+        if ($requests >= $this->maxRequests) {
+            throw new Exception("Too many requests per minute.", 429);
+        }
     }
 
 

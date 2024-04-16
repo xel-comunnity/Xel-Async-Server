@@ -34,6 +34,7 @@ final class CentralManagerRunner implements CentralManagerInterface
       $this->container = $container;
       return $this;
     }
+
     /*******************************************************************************************************************
      * Regular Operation
      ******************************************************************************************************************/

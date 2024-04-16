@@ -1,7 +1,7 @@
 <?php
 
 namespace Xel\Async\Contract;
-use Psr\Http\Message\ResponseInterface;
+use Xel\Async\CentralManager\CentralManagerRunner;
 
 interface CentralManagerInterface
 {
@@ -16,6 +16,7 @@ interface CentralManagerInterface
     public function doProcess(callable $function);
     public function beforeExecute(string $job);
     public function afterExecute(string $job);
+    public function loadBaseData(...$BaseData): CentralManagerRunner;
 
     /*******************************************************************************************************************
      * Optimization Process

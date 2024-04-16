@@ -55,7 +55,7 @@ final class CentralManagerRunner implements CentralManagerInterface
      * @throws DependencyException
      * @throws NotFoundException
      */
-    public function loadBaseData(...$BaseData, ): CentralManagerRunner
+    public function loadBaseData(...$BaseData): CentralManagerRunner
     {
         $list = $this->container->get('basedata');
         $param = [];

@@ -14,6 +14,9 @@ use Swoole\Server;
 use Swoole\Server\Task;
 use Xel\Async\Contract\ApplicationInterface;
 use Xel\Async\Contract\JobInterface;
+use Xel\Async\Gemstone\Exception\BlackListException;
+use Xel\Async\Gemstone\Exception\TooManyRequestException;
+use Xel\Async\Gemstone\SlidingWindowLimiter;
 use Xel\Async\Gemstone\TokenBucketLimiter;
 use Xel\Async\Http\Server\Server_v2;
 use Xel\Async\Router\Main_v2;
@@ -22,7 +25,7 @@ use Xel\DB\QueryBuilder\QueryDML;
 final readonly class Application_v3 implements ApplicationInterface {
 
     public Server $server;
-    private TokenBucketLimiter $bucketLimiter;
+    private SlidingWindowLimiter $bucketLimiter;
     private Main_v2 $main_v2;
     public function __construct
     (
@@ -85,6 +88,7 @@ final readonly class Application_v3 implements ApplicationInterface {
     /**
      * @throws DependencyException
      * @throws NotFoundException
+     * @throws Exception
      */
     public function onRequest(Request $request, Response $response): void
     {
@@ -96,15 +100,16 @@ final readonly class Application_v3 implements ApplicationInterface {
                 ->dispatch($request->server['request_method'],$request->server['request_uri'])
                 ->execute($request, $response);
         }else{
-            if ($this->bucketLimiter->isPermitted()){
-                $router($this->server)
-                    ->routerMapper()
-                    ->dispatch($request->server['request_method'],$request->server['request_uri'])
-                    ->execute($request, $response);
-            }else{
-                $response->setStatusCode(429, "To Many Request");
+            try {
+                if ($this->bucketLimiter->isAllowed($request, $response)){
+                    $router($this->server)
+                        ->routerMapper()
+                        ->dispatch($request->server['request_method'],$request->server['request_uri'])
+                        ->execute($request, $response);
+                }
+            }catch (Exception $e){
                 $response->end(json_encode([
-                    "error" => "Too Many Request !! , Please Try in a View Minutes",
+                    "error" => $e->getMessage(),
                 ]));
             }
         }
@@ -155,12 +160,14 @@ final readonly class Application_v3 implements ApplicationInterface {
     {
         $config = $this->register->get('gemstone');
 
-        $instance = new TokenBucketLimiter
+        $instance = new SlidingWindowLimiter
         (
             $config['gemstone_limiter']['max_token'],
-            $config['gemstone_limiter']['refill_rate'],
-            $config['gemstone_limiter']['interval']
+            $config['gemstone_limiter']['interval'],
+            $config['gemstone_limiter']['anomaly_request_reach'],
+            $config['gemstone_limiter']['black_list_path'],
         );
+
         $this->bucketLimiter = $instance;
         return $this;
     }

@@ -136,7 +136,7 @@ class Main_v2
         if ($instance instanceof $abstractClass){
             $instance->serverRequest = $request;
             $instance->container = $this->register;
-            $instance->jobDispatcherDispatcher = $centralManagerRunner;
+            $instance->return = $centralManagerRunner;
         }
 
         return $object;

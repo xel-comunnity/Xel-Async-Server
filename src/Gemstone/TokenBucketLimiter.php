@@ -18,7 +18,7 @@ class TokenBucketLimiter
     public function isPermitted(): bool
     {
         $this->refill();
-        if ($this->currentTokens >= 1){
+        if ($this->currentTokens > 0){
             $this->currentTokens--;
             return true;
         }

@@ -47,9 +47,9 @@ final class CentralManagerRunner implements CentralManagerInterface
     {
         if($this->useQueryBuilder === false){
             $function($this->response, ...$this->currentModel);
+        }else{
+            $function($this->response, $this->queryDML());
         }
-
-        $function($this->response, $this->queryDML());
     }
 
     /**
@@ -81,7 +81,6 @@ final class CentralManagerRunner implements CentralManagerInterface
      */
     public function doProcess(callable $function): CentralManagerRunner
     {
-
         $this->responses = $function($this->response, $this->queryDML());
         return $this;
     }

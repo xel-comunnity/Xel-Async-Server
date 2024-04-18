@@ -6,6 +6,7 @@ use DI\Container;
 use DI\DependencyException;
 use DI\NotFoundException;
 use Exception;
+use Swoole\Http\Request;
 use Swoole\Server;
 use Xel\Async\Contract\CentralManagerInterface;
 use Xel\Async\Http\Responses;
@@ -18,8 +19,8 @@ final class CentralManagerRunner implements CentralManagerInterface
     private mixed $responses;
     private bool $useQueryBuilder = true;
 
-    private Server    $server;
-    private Responses  $response;
+    private Server $server;
+    private Responses $response;
     private Container $container;
 
     public function __invoke
@@ -72,7 +73,15 @@ final class CentralManagerRunner implements CentralManagerInterface
 
 
     /*******************************************************************************************************************
-     *
+     * Regular Operation
+     ******************************************************************************************************************/
+    public function cacheWorkSpace(int $interval,callable $function)
+    {
+           
+    }
+
+    /*******************************************************************************************************************
+     * Scheduler Task
      ******************************************************************************************************************/
 
     /**
@@ -142,7 +151,7 @@ final class CentralManagerRunner implements CentralManagerInterface
         }
     }
     /*******************************************************************************************************************
-     *
+     * Query Builder
      ******************************************************************************************************************/
 
     /**
@@ -157,6 +166,4 @@ final class CentralManagerRunner implements CentralManagerInterface
         $instance =$this->container->get('xgen');
         return $instance;
     }
-
-
 }

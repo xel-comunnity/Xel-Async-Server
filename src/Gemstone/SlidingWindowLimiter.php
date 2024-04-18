@@ -5,7 +5,6 @@ use Exception;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Table;
-use Xel\Async\Gemstone\Exception\BlackListException;
 
 class SlidingWindowLimiter
 {

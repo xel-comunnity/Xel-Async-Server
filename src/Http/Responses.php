@@ -18,6 +18,7 @@ class Responses
     public function plain(string $data, int $http_code): void
     {
         $this->response->setStatusCode($http_code);
+        $this->response->header("Content-Type", "text/plain");
         $this->response->end($data);
     }
     // ? return json
@@ -26,6 +27,7 @@ class Responses
         // ? process data first
         $data = $enable_pretty_print === true ?json_encode($data,JSON_PRETTY_PRINT):json_encode($data);
         $this->response->setStatusCode($http_code);
+        $this->response->header("Content-Type", "application/json");
         $this->response->end($data);
     }
     // ? downloadable file

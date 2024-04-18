@@ -87,8 +87,13 @@ class Main_v2
                 // ? check middleware if exists and launched as separated process
                 $middleware = $this->middlewareMaker();
                 $mergeMiddleware = array_merge($this->globalMiddleware(), $this->dispatch[1][2]);
-                $middleware($mergeMiddleware, $request, $response)
-                    ->addMiddleware();
+                $middleware
+                (
+                    middlewares: $mergeMiddleware,
+                    request:  $request,
+                    response: $response,
+                    container: $this->register
+                )->addMiddleware();
                 $middleware->handle($request);
 
                 // ? process Dispatch router class which founded

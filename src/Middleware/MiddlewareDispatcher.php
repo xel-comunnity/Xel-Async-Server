@@ -2,6 +2,7 @@
 
 namespace Xel\Async\Middleware;
 
+use DI\Container;
 use SplQueue;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
@@ -13,11 +14,13 @@ readonly class MiddlewareDispatcher implements RequestHandlerInterfaces
     private SplQueue $splQueue;
     private array $middlewares;
     private Response $response;
+    private Container $container;
 
-    public function __invoke(array $middlewares, Request $request, Response $response): static
+    public function __invoke(array $middlewares, Request $request, Response $response, Container $container): static
     {
        $this->middlewares = $middlewares;
        $this->response = $response;
+       $this->container = $container;
        $this->queue();
        return $this;
     }
@@ -25,7 +28,7 @@ readonly class MiddlewareDispatcher implements RequestHandlerInterfaces
     public function addMiddleware(): void
     {
         foreach ($this->middlewares as $middleware) {
-            $instance = new $middleware();
+            $instance = new $middleware($this->container);
             if ($instance instanceof MiddlewareInterfaces) {
                 $this->splQueue->enqueue($instance);
             }

@@ -99,18 +99,19 @@ final readonly class Application_v3 implements ApplicationInterface {
         if ($config['securePost']['condition'] !== false){
             if (isset($config['securePost']['cors'])) {
                 $corsConfig = $config['securePost']['cors'];
+
+                // Set CORS headers for all requests
+                $response->header('Access-Control-Allow-Origin', $corsConfig['allowOrigin']);
+                if ($corsConfig['allowCredentials']) {
+                    $response->header('Access-Control-Allow-Credentials', 'true');
+                }
+
                 // Handle preflight requests
                 if ($request->server['request_method'] === 'OPTIONS') {
                     $response->status(200);
-                    $response->header('Access-Control-Allow-Origin', $corsConfig['allowOrigin']);
                     $response->header('Access-Control-Allow-Methods', implode(', ', $corsConfig['allowMethods']));
                     $response->header('Access-Control-Allow-Headers', implode(', ', $corsConfig['allowHeaders']));
                     $response->header('Access-Control-Max-Age', $corsConfig['maxAge']);
-
-                    if ($corsConfig['allowCredentials']) {
-                        $response->header('Access-Control-Allow-Credentials', 'true');
-                    }
-
                     $response->end();
                     return;
                 }

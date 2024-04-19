@@ -93,6 +93,30 @@ final readonly class Application_v3 implements ApplicationInterface {
         $router = $this->main_v2;
         $config = $this->register->get('gemstone');
 
+        /**
+         * Global Cors
+         */
+        if ($config['securePost']['condition'] !== false){
+            if (isset($config['securePost']['cors'])) {
+                $corsConfig = $config['securePost']['cors'];
+                // Handle preflight requests
+                if ($request->server['request_method'] === 'OPTIONS') {
+                    $response->status(200);
+                    $response->header('Access-Control-Allow-Origin', $corsConfig['allowOrigin']);
+                    $response->header('Access-Control-Allow-Methods', implode(', ', $corsConfig['allowMethods']));
+                    $response->header('Access-Control-Allow-Headers', implode(', ', $corsConfig['allowHeaders']));
+                    $response->header('Access-Control-Max-Age', $corsConfig['maxAge']);
+
+                    if ($corsConfig['allowCredentials']) {
+                        $response->header('Access-Control-Allow-Credentials', 'true');
+                    }
+
+                    $response->end();
+                    return;
+                }
+            }
+        }
+
         if ($config['gemstone_limiter']['condition'] === false){
             $router($this->server)
                 ->routerMapper()

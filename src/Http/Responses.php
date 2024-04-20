@@ -81,7 +81,7 @@ class Responses
     public function compressedDisplay(string $display): void
     {
         ob_start();
-        require_once $this->path.$display;
+        require $this->path.$display;
         $html = ob_get_clean();
         $this->response->header('Content-Type', 'text/html');
         $this->response->end($html);
@@ -90,7 +90,7 @@ class Responses
     public function Display(string $display): void
     {
         ob_start();
-        require_once $this->path.$display;
+        require $this->path.$display;
         $html = ob_get_clean();
         $this->response->header('Content-Type', 'text/html');
         $this->response->write($html);

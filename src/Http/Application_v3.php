@@ -120,7 +120,6 @@ final class Application_v3 implements ApplicationInterface
                 }
             }
         }
-
         // csrf check
         if ($config['gemstone_csrf']['condition'] === true && $request->getMethod() === 'POST' || $request->getMethod() === 'PUT'  || $request->getMethod() === 'PATCH' || $request->getMethod() === 'DELETE') {
             $this->csrfShield($request,$response, $config['gemstone_csrf']['key']);

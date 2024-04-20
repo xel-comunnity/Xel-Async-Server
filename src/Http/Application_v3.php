@@ -134,7 +134,7 @@ final readonly class Application_v3 implements ApplicationInterface
         }
 
         try {
-            if ($this->gemstoneLimiter()->bucketLimiter->isAllowed($request, $response)) {
+            if ($this->bucketLimiter->isAllowed($request, $response)) {
                 $router($this->server)
                     ->routerMapper()
                     ->dispatch($request->server['request_method'], $request->server['request_uri'])

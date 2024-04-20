@@ -20,7 +20,7 @@ use Xel\Async\Http\Server\Server_v2;
 use Xel\Async\Router\Main_v2;
 use Xel\DB\QueryBuilder\QueryDML;
 
-final readonly class Application_v3 implements ApplicationInterface
+final class Application_v3 implements ApplicationInterface
 {
 
     public Server $server;
@@ -29,10 +29,10 @@ final readonly class Application_v3 implements ApplicationInterface
 
     public function __construct
     (
-        private array     $config,
-        private array     $loader,
-        private array     $dbConfig,
-        private Container $register,
+        private readonly array     $config,
+        private readonly array     $loader,
+        private readonly array     $dbConfig,
+        private readonly Container $register,
     )
     {}
 

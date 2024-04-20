@@ -205,8 +205,8 @@ final class Application_v3 implements ApplicationInterface
     public function csrfShield(Request $request, Response $response, $key): void
     {
         $data = new Csrf_Shield();
-        if ($request->header['X-CSRF-Token'] != null) {
-           if ($data->validateToken($request->header['X-CSRF-Token'], $key) === false){
+        if ($request->header['x-csrf-token'] != null) {
+           if ($data->validateToken($request->header['x-csrf-token'], $key) === false){
                $response->setStatusCode(419, "Csrf Token Mismatch");
                $response->end(json_encode(["error" =>"csrf token mismatch"]));
            }

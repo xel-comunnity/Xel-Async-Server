@@ -8,6 +8,7 @@ class Responses
     private string $path;
     public function __invoke(Response $response, string $path): static
     {
+        $this->path = $path;
         $this->response = $response;
         return $this;
     }

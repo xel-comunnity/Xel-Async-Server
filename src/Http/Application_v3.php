@@ -216,5 +216,4 @@ final class Application_v3 implements ApplicationInterface
         $response->setStatusCode(419, "Csrf Token Mismatch");
         $response->end(json_encode(["error" =>"csrf token mismatch"]));
     }
-
 }

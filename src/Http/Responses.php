@@ -80,22 +80,20 @@ class Responses
 
     public function compressedDisplay(string $display): void
     {
-        $data = file_get_contents($this->path.$display);
+        ob_start();
+        require_once $this->path.$display;
+        $html = ob_get_clean();
         $this->response->header('Content-Type', 'text/html');
-        $this->response->end($data);
-    }
-
-    public function OptimizedDisplay(string $display): void
-    {
-        $data = file_get_contents($this->path.$display);
-        $this->response->sendfile($data);
-
+        $this->response->end($html);
     }
 
     public function Display(string $display): void
     {
-        $data = file_get_contents($this->path.$display);
+        ob_start();
+        require_once $this->path.$display;
+        $html = ob_get_clean();
         $this->response->header('Content-Type', 'text/html');
-        $this->response->end($data);
+        $this->response->write($html);
+        $this->response->end();
     }
 }

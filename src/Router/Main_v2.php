@@ -95,9 +95,9 @@ class Main_v2
                     container: $this->register
                 )->addMiddleware();
                 $middleware->handle($request);
-
+                $path = $this->register->get('display_path');
                 // ? process Dispatch router class which founded
-                $jobMaker = $this->jobMaker()($this->server, $this->responseMaker()($response), $this->register);
+                $jobMaker = $this->jobMaker()($this->server, $this->responseMaker()($response,$path), $this->register);
                 $instance = $this->instanceMaker($request, $jobMaker);
                 $vars = $this->dispatch[2];
 

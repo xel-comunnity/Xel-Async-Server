@@ -28,7 +28,7 @@ class Csrf_Shield implements CsrfShieldedInterface
 
         $data = openssl_decrypt($token, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv);
 
-        if (!hash_equals($data, $this->csrfTokenRandom)) {
+        if ($data === false) {
             return false;
         }
         return true;

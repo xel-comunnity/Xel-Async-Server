@@ -207,11 +207,14 @@ final readonly class Application_v3 implements ApplicationInterface
     {
         $data = new Csrf_Shield();
         if ($request->header['X-CSRF-Token'] != null) {
-            $response->header('X-CSRF-Token', $data->generateCSRFToken($key));
+           if ($data->validateToken($request->header['X-CSRF-Token'], $key) === false){
+               $response->setStatusCode(419, "Csrf Token Mismatch");
+               $response->end(json_encode(["error" =>"csrf token mismatch"]));
+           }
+           return;
         }
         $response->setStatusCode(419, "Csrf Token Mismatch");
         $response->end(json_encode(["error" =>"csrf token mismatch"]));
     }
-
 
 }

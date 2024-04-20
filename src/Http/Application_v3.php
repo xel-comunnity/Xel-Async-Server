@@ -12,19 +12,21 @@ use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Server;
 use Swoole\Server\Task;
-use Throwable;
 use Xel\Async\Contract\ApplicationInterface;
 use Xel\Async\Contract\JobInterface;
+use Xel\Async\Gemstone\Csrf_Shield;
 use Xel\Async\Gemstone\SlidingWindowLimiter;
 use Xel\Async\Http\Server\Server_v2;
 use Xel\Async\Router\Main_v2;
 use Xel\DB\QueryBuilder\QueryDML;
 
-final readonly class Application_v3 implements ApplicationInterface {
+final readonly class Application_v3 implements ApplicationInterface
+{
 
     public Server $server;
     private SlidingWindowLimiter $bucketLimiter;
     private Main_v2 $main_v2;
+
     public function __construct
     (
         private array     $config,
@@ -62,6 +64,7 @@ final readonly class Application_v3 implements ApplicationInterface {
     {
         echo "Listen : {$this->config['api_server']['host']}:{$this->config['api_server']['port']}";
     }
+
     /**
      * @throws Exception
      */
@@ -96,7 +99,7 @@ final readonly class Application_v3 implements ApplicationInterface {
         /**
          * Global Cors
          */
-        if ($config['securePost']['condition'] !== false){
+        if ($config['securePost']['condition'] !== false) {
             if (isset($config['securePost']['cors'])) {
                 $corsConfig = $config['securePost']['cors'];
 
@@ -118,18 +121,23 @@ final readonly class Application_v3 implements ApplicationInterface {
             }
         }
 
-        if ($config['gemstone_limiter']['condition'] === false){
+        // csrf check
+        if (!$config['gemstone_csrf']['condition'] && $request->getMethod() === 'POST' || $request->getMethod() === 'PUT'  || $request->getMethod() === 'PATCH' || $request->getMethod() === 'DELETE') {
+            $this->csrfShield($request,$response, $config['gemstone_csrf']['key']);
+        }
+
+        if ($config['gemstone_limiter']['condition'] === false) {
             $router($this->server)
                 ->routerMapper()
-                ->dispatch($request->server['request_method'],$request->server['request_uri'])
+                ->dispatch($request->server['request_method'], $request->server['request_uri'])
                 ->execute($request, $response);
         }
 
         try {
-            if ($this->bucketLimiter->isAllowed($request, $response)) {
+            if ($this->gemstoneLimiter()->bucketLimiter->isAllowed($request, $response)) {
                 $router($this->server)
                     ->routerMapper()
-                    ->dispatch($request->server['request_method'],$request->server['request_uri'])
+                    ->dispatch($request->server['request_method'], $request->server['request_uri'])
                     ->execute($request, $response);
             }
         } catch (Exception $e) {
@@ -151,28 +159,29 @@ final readonly class Application_v3 implements ApplicationInterface {
      */
     public function onTask(Server $server, Server\Task $task): void
     {
-        $instance =  $this->register->get($task->data);
-        if($instance instanceof JobInterface){
+        $instance = $this->register->get($task->data);
+        if ($instance instanceof JobInterface) {
             try {
                 $instance->process();
                 $task->finish(true);
-            }catch (Exception $e){
+            } catch (Exception $e) {
                 $task->finish($e->getMessage());
             }
         }
     }
 
     public function onFinish(Server $server, int $taskId, $data): void
-    {}
+    {
+    }
 
     /******************************************************************************************************************
      * Server Utility Section
      ******************************************************************************************************************/
     public function router(): Application_v3
     {
-         $instance =  new Main_v2($this->register, $this->loader);
-         $this->main_v2 = $instance;
-         return $this;
+        $instance = new Main_v2($this->register, $this->loader);
+        $this->main_v2 = $instance;
+        return $this;
     }
 
     /**
@@ -193,4 +202,16 @@ final readonly class Application_v3 implements ApplicationInterface {
         $this->bucketLimiter = $instance;
         return $this;
     }
+
+    public function csrfShield(Request $request, Response $response, $key): void
+    {
+        $data = new Csrf_Shield();
+        if ($request->header['X-CSRF-Token'] != null) {
+            $response->header('X-CSRF-Token', $data->generateCSRFToken($key));
+        }
+        $response->setStatusCode(419, "Csrf Token Mismatch");
+        $response->end(json_encode(["error" =>"csrf token mismatch"]));
+    }
+
+
 }

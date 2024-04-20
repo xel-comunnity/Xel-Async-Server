@@ -5,7 +5,8 @@ use Swoole\Http\Response;
 class Responses
 {
     private Response $response;
-    public function __invoke(Response $response): static
+    private string $path;
+    public function __invoke(Response $response, string $path): static
     {
         $this->response = $response;
         return $this;
@@ -74,5 +75,26 @@ class Responses
     {
         $this->response->setCookie($name, $value, $expire, $path, $domain,$secure, $httponly, $sameSite, $priority);
         return $this;
+    }
+
+    public function compressedDisplay(string $display): void
+    {
+        $data = file_get_contents($this->path.$display);
+        $this->response->header('Content-Type', 'text/html');
+        $this->response->end($data);
+    }
+
+    public function OptimizedDisplay(string $display): void
+    {
+        $data = file_get_contents($this->path.$display);
+        $this->response->sendfile($data);
+
+    }
+
+    public function Display(string $display): void
+    {
+        $data = file_get_contents($this->path.$display);
+        $this->response->header('Content-Type', 'text/html');
+        $this->response->end($data);
     }
 }

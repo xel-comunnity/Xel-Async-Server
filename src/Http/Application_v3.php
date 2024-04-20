@@ -95,7 +95,7 @@ final class Application_v3 implements ApplicationInterface
     {
         $router = $this->main_v2;
         $config = $this->register->get('gemstone');
-
+        var_dump($request->header);
         /**
          * Global Cors
          */

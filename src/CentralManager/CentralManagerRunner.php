@@ -6,7 +6,6 @@ use DI\Container;
 use DI\DependencyException;
 use DI\NotFoundException;
 use Exception;
-use Swoole\Http\Request;
 use Swoole\Server;
 use Xel\Async\Contract\CentralManagerInterface;
 use Xel\Async\Http\Responses;

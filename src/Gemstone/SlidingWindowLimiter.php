@@ -94,7 +94,7 @@ class SlidingWindowLimiter
     /**
      * @throws Exception
      */
-    private function passIp($requests, $key): void
+    private function passIp($requests): void
     {
         if ($requests >= $this->maxRequests) {
             throw new Exception("Too many requests per minute.", 429);

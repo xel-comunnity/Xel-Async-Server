@@ -119,29 +119,37 @@ final class Application_v3 implements ApplicationInterface
                 }
             }
         }
-        // csrf check
+        /**
+         * Gemstone Limiter
+         */
         if ($config['gemstone_csrf']['condition'] === true && $request->getMethod() === 'POST' || $request->getMethod() === 'PUT'  || $request->getMethod() === 'PATCH' || $request->getMethod() === 'DELETE') {
             $this->csrfShield($request,$response, $config['gemstone_csrf']['key']);
         }
+
+        /**
+         * Gemstone CSRF
+         */
 
         if ($config['gemstone_limiter']['condition'] === false) {
             $router($this->server)
                 ->routerMapper()
                 ->dispatch($request->server['request_method'], $request->server['request_uri'])
                 ->execute($request, $response);
+        }else{
+            try {
+                if ($this->bucketLimiter->isAllowed($request, $response)) {
+                    $router($this->server)
+                        ->routerMapper()
+                        ->dispatch($request->server['request_method'], $request->server['request_uri'])
+                        ->execute($request, $response);
+                }
+            } catch (Exception $e) {
+                $response->status($e->getCode(), $e->getMessage());
+                $response->end($e->getMessage());
+            }
         }
 
-        try {
-            if ($this->bucketLimiter->isAllowed($request, $response)) {
-                $router($this->server)
-                    ->routerMapper()
-                    ->dispatch($request->server['request_method'], $request->server['request_uri'])
-                    ->execute($request, $response);
-            }
-        } catch (Exception $e) {
-            $response->status($e->getCode(), $e->getMessage());
-            $response->end($e->getMessage());
-        }
+
     }
 
 

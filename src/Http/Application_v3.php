@@ -18,14 +18,16 @@ use Xel\Async\Gemstone\Csrf_Shield;
 use Xel\Async\Gemstone\SlidingWindowLimiter;
 use Xel\Async\Http\Server\Server_v2;
 use Xel\Async\Router\Main_v2;
+use Xel\Async\SessionManager\SwooleSession;
 use Xel\DB\QueryBuilder\QueryDML;
 
 final class Application_v3 implements ApplicationInterface
 {
-
     public Server $server;
     private SlidingWindowLimiter $bucketLimiter;
     private Main_v2 $main_v2;
+    private SwooleSession $session;
+    private Csrf_Shield $csrfManager;
 
     public function __construct
     (
@@ -41,8 +43,19 @@ final class Application_v3 implements ApplicationInterface
         Server_v2::init($this->config);
         $server = Server_v2::getServer();
 
-        // Init Server
+        // ? Init Server
         $this->server = $server;
+
+        // ? Init Swoole Session
+        $session = new SwooleSession();
+        $session->__init();
+        $this->session = $session;
+
+        // ? Init Csrf Shield
+        $config = $this->register->get('gemstone');
+        $csrfConfig = $config['gemstone_csrf'];
+        $this->csrfManager = new Csrf_Shield($this->session, $csrfConfig);    
+   
 
         // ? server start
         $server->on('Start', [$this, 'onStart']);
@@ -68,10 +81,11 @@ final class Application_v3 implements ApplicationInterface
     /**
      * @throws Exception
      */
-    public function onWorkerStart(): void
+    public function onWorkerStart(Server $server, $workerId): void
     {
-        // ? xgen connector
-        $conn = new PDOPool((new PDOConfig())
+        if ($workerId === 0) {
+            // ? xgen connector
+            $conn = new PDOPool((new PDOConfig())
             ->withDriver($this->dbConfig['driver'])
             ->withCharset($this->dbConfig['charset'])
             ->withHost($this->dbConfig['host'])
@@ -81,9 +95,63 @@ final class Application_v3 implements ApplicationInterface
             ->withOptions($this->dbConfig['options']),
             $this->dbConfig['pool']);
 
-        // ? Query Builder
-        $builder = new QueryDML($conn, $this->dbConfig['poolMode']);
-        $this->register->set('xgen', $builder);
+            // ? Query Builder
+            $builder = new QueryDML($conn, $this->dbConfig['poolMode']);
+            $this->register->set('xgen', $builder);
+
+            // ? get config 
+            $config = $this->register->get('gemstone');
+            $sessionConfig = $config['gemstone_csrf'];
+            $session = $this->session;
+
+
+            if($sessionConfig['condition'] !== false){
+                // Start a coroutine to handle session cleanup
+                \Swoole\Coroutine::create(function () use ($session, $sessionConfig){
+                    while (true) {
+                        // Sleep for 5 seconds
+                        \Swoole\Coroutine::sleep($sessionConfig['clear_rate']);
+
+                        // Get the current session data
+                        $data = $session->currentSession();
+
+                        // Initialize a flag to track if any session was cleared
+                        $sessionCleared = 0;
+                        // Iterate over the session data
+                        if($session->count() > 0){
+                            foreach ($data as $key => $value) {
+                                if ($value['expired'] <= time()) {
+                                    // Delete the expired session
+                                    $session->delete($key);
+                                    $sessionCleared = 1;
+                                }else{
+                                    $sessionCleared = 2;
+                                }
+                            }
+                        }else{
+                            $sessionCleared = 0;
+                        }
+                    
+                        
+                        switch($sessionCleared){
+                            case 1 :
+                                echo "Already cleared and current session is : " . $session->count() . PHP_EOL;
+                                break;
+                            case 2 :
+                                echo "current session is : " . $session->count() . PHP_EOL;
+                                break;    
+                            default:
+                                echo '[HTTP1-ADVANCED]: Empty (' . date('H:i:s') . ')', PHP_EOL;
+                                break;
+                        }
+                    
+                    }
+                });
+            }
+
+         
+        }
+        
     }
 
     /**
@@ -103,18 +171,37 @@ final class Application_v3 implements ApplicationInterface
                 $corsConfig = $config['securePost']['cors'];
 
                 // Set CORS headers for all requests
-                $response->header('Access-Control-Allow-Origin', $corsConfig['allowOrigin']);
+                $whiteLits = $corsConfig['whitelists'];
+                if(isset($request->header['origin'])){
+                    // ? check origin in white list
+                    $origin = $request->header['origin'];
+                    if(in_array($origin, $whiteLits)){
+                        // Add CORS headers
+                        $response->header('Access-Control-Allow-Origin', $origin);
+                        $response->header('Access-Control-Allow-Methods', implode(', ', $corsConfig['allowMethods']));
+                        $response->header('Access-Control-Allow-Headers', implode(', ', $corsConfig['allowHeaders']));
+                        $response->header('Access-Control-Expose-Headers', implode(', ',$corsConfig['allowExposeHeaders'])); // Add this line
+            
+                    }else{
+                        $response->setStatusCode(403, 'Forbiden Access');
+                        $response->end('Forbiden access');
+                    }
+                }else{
+                    $response->header('Access-Control-Allow-Origin', $request->header['host']);
+                    $response->header('Access-Control-Allow-Methods', implode(', ', $corsConfig['allowMethods']));
+                    $response->header('Access-Control-Allow-Headers', implode(', ', $corsConfig['allowHeaders']));
+                    $response->header('Access-Control-Expose-Headers', implode(', ',$corsConfig['allowExposeHeaders'])); // 
+
+                }
+  
                 if ($corsConfig['allowCredentials']) {
-                    $response->header('Access-Control-Allow-Credentials', 'true');
+                    $response->header('Access-Control-Allow-Credentials', $corsConfig['allowCredentials']);
                 }
 
                 // Handle preflight requests
                 if ($request->server['request_method'] === 'OPTIONS') {
-                    $response->status(200);
-                    $response->header('Access-Control-Allow-Methods', implode(', ', $corsConfig['allowMethods']));
-                    $response->header('Access-Control-Allow-Headers', implode(', ', $corsConfig['allowHeaders']));
                     $response->header('Access-Control-Max-Age', $corsConfig['maxAge']);
-                    $response->end();
+                    $response->status(200);                    
                     return;
                 }
             }
@@ -129,7 +216,6 @@ final class Application_v3 implements ApplicationInterface
         /**
          * Gemstone CSRF
          */
-
         if ($config['gemstone_limiter']['condition'] === false) {
             $router($this->server)
                 ->routerMapper()
@@ -148,8 +234,6 @@ final class Application_v3 implements ApplicationInterface
                 $response->end($e->getMessage());
             }
         }
-
-
     }
 
 
@@ -211,15 +295,17 @@ final class Application_v3 implements ApplicationInterface
 
     public function csrfShield(Request $request, Response $response, $key): void
     {
-        $data = new Csrf_Shield();
+        $data = $this->csrfManager;
         if ($request->header['x-csrf-token'] != null) {
            if ($data->validateToken($request->header['x-csrf-token'], $key) === false){
                $response->setStatusCode(419, "Csrf Token Mismatch");
                $response->end(json_encode(["error" =>"csrf token mismatch"]));
            }
            return;
+        }else{
+            $response->setStatusCode(419, "Csrf Token Mismatch");
+            $response->end(json_encode(["error" =>"csrf token mismatch"]));
         }
-        $response->setStatusCode(419, "Csrf Token Mismatch");
-        $response->end(json_encode(["error" =>"csrf token mismatch"]));
+
     }
 }

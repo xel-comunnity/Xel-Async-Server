@@ -73,7 +73,12 @@ class GemstoneMaker implements GemstoneMakerInterface
         $count = filter_var($count, FILTER_SANITIZE_NUMBER_INT);
         $step = filter_var($step, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 
-        if ($min === false || $max === false || $count === false || $step === false || $min >= $max || $count <= 0 || $step <= 0) {
+        if ($min === false 
+        || $max === false 
+        || $count === false 
+        || $step === false 
+        || $min >= $max 
+        || $count <= 0 || $step <= 0) {
             throw new InvalidArgumentException("Invalid input parameters.");
         }
 

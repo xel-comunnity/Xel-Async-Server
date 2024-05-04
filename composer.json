@@ -29,7 +29,8 @@
         "psr/http-server-middleware": "^1.0",
       "ext-pdo": "*",
         "xel/orm": "^1.0",
-      "ext-openssl": "*"
+      "ext-openssl": "*",
+        "swoole/ide-helper": "@dev"
     },
     "scripts": {
         "analyse": "phpstan analyse"

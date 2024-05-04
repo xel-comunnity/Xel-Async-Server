@@ -56,7 +56,11 @@ class Main_v2
             foreach ($this->loader as $item){
                 $class = $item['Class'];
                 $method = $item['Method'];
-                $routeCollector->addRoute($item['RequestMethod'], $item['Uri'], [$class, $method, $item["Middlewares"]]);
+                $routeCollector->addRoute(
+                    $item['RequestMethod'], 
+                    $item['Uri'], 
+                    [$class, $method, $item["Middlewares"]]
+                );
             }
         });
         return $this;

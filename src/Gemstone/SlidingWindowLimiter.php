@@ -45,29 +45,25 @@ class SlidingWindowLimiter
             throw new Exception("IP address $key is blocked.", 403);
 
         }
-
         $currentTime = time();
         $requests = 0;
         $lastResetTime = 0;
         $blocked = 0;
-
         if ($this->table->exist($key)) {
             $requests = $this->table->get($key, 'requests');
             $lastResetTime = $this->table->get($key, 'lastResetTime');
             $blocked = $this->table->get($key, 'blocked');
         }
-
-
-
         if ($blocked) {
             throw new Exception("IP address $key is blocked.", 403);
         }
 
         if ($currentTime - $lastResetTime > $this->windowSize) {
-            $this->table->set($key, ['requests' => 1, 'lastResetTime' => $currentTime, 'blocked' => 0]);
+            $this->table->set($key, 
+            ['requests' => 1, 'lastResetTime' => $currentTime, 'blocked' => 0]
+        );
             return true;
         }
-
         // a sample test v10
         if (count($this->black_list) > 0){
             $this->blockIp($requests, $key);
@@ -88,7 +84,6 @@ class SlidingWindowLimiter
             $this->blacklistIp($key);
             throw new Exception("Too many requests per minute. IP address $key has been blocked.", 403);
         }
-
     }
 
     /**
@@ -100,8 +95,7 @@ class SlidingWindowLimiter
             throw new Exception("Too many requests per minute.", 429);
         }
     }
-
-
+    
     private function blacklistIp(string $ip): void
     {
         $this->blacklistedIps[] = $ip;

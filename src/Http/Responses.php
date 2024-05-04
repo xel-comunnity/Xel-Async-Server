@@ -2,6 +2,7 @@
 
 namespace Xel\Async\Http;
 use Swoole\Http\Response;
+
 class Responses
 {
     private Response $response;
@@ -94,6 +95,5 @@ class Responses
         $html = ob_get_clean();
         $this->response->header('Content-Type', 'text/html');
         $this->response->write($html);
-        $this->response->end();
     }
 }

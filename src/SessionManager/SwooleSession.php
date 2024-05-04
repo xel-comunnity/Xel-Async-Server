@@ -1,10 +1,8 @@
 <?php
+
 namespace Xel\Async\SessionManager;
 
 use Swoole\Table;
-
-require __DIR__ . "/../../vendor/autoload.php";
-
 class SwooleSession
 {
     private Table $table;

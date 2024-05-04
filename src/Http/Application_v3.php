@@ -51,10 +51,11 @@ final class Application_v3 implements ApplicationInterface
         $session->__init();
         $this->session = $session;
 
-        // ? Init Csrf Shield
+        // ? Init Csrf Shield and register to container
         $config = $this->register->get('gemstone');
         $csrfConfig = $config['gemstone_csrf'];
         $this->csrfManager = new Csrf_Shield($this->session, $csrfConfig);    
+        $this->register->set('csrfShield', $this->csrfManager);
    
 
         // ? server start
@@ -83,7 +84,6 @@ final class Application_v3 implements ApplicationInterface
      */
     public function onWorkerStart(Server $server, $workerId): void
     {
-
         // ? xgen connector
         $conn = new PDOPool((new PDOConfig())
         ->withDriver($this->dbConfig['driver'])
@@ -106,7 +106,7 @@ final class Application_v3 implements ApplicationInterface
             $session = $this->session;
 
 
-            if($sessionConfig['condition'] !== false){
+            if($sessionConfig['condition'] === true){
                 // Start a coroutine to handle session cleanup
                 \Swoole\Coroutine::create(function () use ($session, $sessionConfig){
                     while (true) {
@@ -132,8 +132,6 @@ final class Application_v3 implements ApplicationInterface
                         }else{
                             $sessionCleared = 0;
                         }
-                    
-                        
                         switch($sessionCleared){
                             case 1 :
                                 echo "Already cleared and current session is : " . $session->count() . PHP_EOL;
@@ -149,10 +147,7 @@ final class Application_v3 implements ApplicationInterface
                     }
                 });
             }
-
-         
         }
-        
     }
 
     /**

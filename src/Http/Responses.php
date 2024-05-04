@@ -97,8 +97,10 @@ class Responses
         $this->response->write($html);
     }
 
-    public function responseWithHeader(string $headerName, mixed $value, string $response = ''):void{
+    public function responseWithHeader(string $headerName, mixed $value,  int $http_code = 200, string $response = ''):void{
+
         $this->response->header($headerName, $value);
+        $this->response->setStatusCode($http_code);
         $this->response->end($response);
     }
 }

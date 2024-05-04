@@ -96,4 +96,9 @@ class Responses
         $this->response->header('Content-Type', 'text/html');
         $this->response->write($html);
     }
+
+    public function responseWithHeader(string $headerName, mixed $value, string $response = ''):void{
+        $this->response->header($headerName, $value);
+        $this->response->end($response);
+    }
 }

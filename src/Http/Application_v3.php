@@ -162,45 +162,43 @@ final class Application_v3 implements ApplicationInterface
         /**
          * Global Cors
          */
-        if ($config['securePost']['condition'] !== false) {
-            if (isset($config['securePost']['cors'])) {
-                $corsConfig = $config['securePost']['cors'];
-
-                // Set CORS headers for all requests
-                $whiteLits = $corsConfig['whitelists'];
-                if(isset($request->header['origin'])){
-                    // ? check origin in white list
-                    $origin = $request->header['origin'];
-                    if(in_array($origin, $whiteLits)){
-                        // Add CORS headers
-                        $response->header('Access-Control-Allow-Origin', $origin);
-                        $response->header('Access-Control-Allow-Methods', implode(', ', $corsConfig['allowMethods']));
-                        $response->header('Access-Control-Allow-Headers', implode(', ', $corsConfig['allowHeaders']));
-                        $response->header('Access-Control-Expose-Headers', implode(', ',$corsConfig['allowExposeHeaders'])); // Add this line
-            
-                    }else{
-                        $response->setStatusCode(403, 'Forbiden Access');
-                        $response->end('Forbiden access');
-                    }
-                }else{
-                    $response->header('Access-Control-Allow-Origin', $request->header['host']);
+        if ($config['securePost']['condition'] === true) {
+            $corsConfig = $config['securePost']['cors'];
+            // Set CORS headers for all requests
+            $whiteLits = $corsConfig['whitelists'];
+            if(isset($request->header['origin'])){
+                // ? check origin in white list
+                $origin = $request->header['origin'];
+                if(in_array($origin, $whiteLits)){
+                    // Add CORS headers
+                    $response->header('Access-Control-Allow-Origin', $origin);
                     $response->header('Access-Control-Allow-Methods', implode(', ', $corsConfig['allowMethods']));
                     $response->header('Access-Control-Allow-Headers', implode(', ', $corsConfig['allowHeaders']));
-                    $response->header('Access-Control-Expose-Headers', implode(', ',$corsConfig['allowExposeHeaders'])); // 
+                    $response->header('Access-Control-Expose-Headers', implode(', ',$corsConfig['allowExposeHeaders'])); // Add this line
+        
+                }else{
+                    $response->setStatusCode(403, 'Forbiden Access', 'blocked by cors');
+                    $response->end('Forbiden access');
+                }
+            }else{
+                $response->header('Access-Control-Allow-Origin', $request->header['host']);
+                $response->header('Access-Control-Allow-Methods', implode(', ', $corsConfig['allowMethods']));
+                $response->header('Access-Control-Allow-Headers', implode(', ', $corsConfig['allowHeaders']));
+                $response->header('Access-Control-Expose-Headers', implode(', ',$corsConfig['allowExposeHeaders'])); // 
 
-                }
-  
-                if ($corsConfig['allowCredentials']) {
-                    $response->header('Access-Control-Allow-Credentials', $corsConfig['allowCredentials']);
-                }
-
-                // Handle preflight requests
-                if ($request->server['request_method'] === 'OPTIONS') {
-                    $response->header('Access-Control-Max-Age', $corsConfig['maxAge']);
-                    $response->status(200);                    
-                    return;
-                }
             }
+
+            if ($corsConfig['allowCredentials']) {
+                $response->header('Access-Control-Allow-Credentials', $corsConfig['allowCredentials']);
+            }
+
+            // Handle preflight requests
+            if ($request->server['request_method'] === 'OPTIONS') {
+                $response->header('Access-Control-Max-Age', $corsConfig['maxAge']);
+                $response->status(200);                    
+                return;
+            }
+            
         }
         /**
          * Gemstone Limiter

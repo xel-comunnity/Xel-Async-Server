@@ -167,6 +167,7 @@ final class Application_v3 implements ApplicationInterface
             // Set CORS headers for all requests
             $whiteLits = $corsConfig['whitelists'];
             if(isset($request->header['origin']) === true){
+                echo "yes";
                 // ? check origin in white list
                 $origin = $request->header['origin'];
                 if(in_array($origin, $whiteLits)){

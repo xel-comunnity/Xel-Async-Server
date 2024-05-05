@@ -168,7 +168,6 @@ final class Application_v3 implements ApplicationInterface
             // Set CORS headers for all requests
             $whiteLits = $corsConfig['whitelists'];
             if(isset($request->header['origin']) === true){
-
                 // ? check origin in white list
                 $origin = $request->header['origin'];
                 var_dump($origin, $whiteLits);
@@ -200,8 +199,9 @@ final class Application_v3 implements ApplicationInterface
             }
             
         }
+
+        var_dump($request->header);
         /**
-         * Gemstone Limiter
          */
         if ($config['gemstone_csrf']['condition'] === true && $request->getMethod() === 'POST' || $request->getMethod() === 'PUT'  || $request->getMethod() === 'PATCH' || $request->getMethod() === 'DELETE') {
             $this->csrfShield($request,$response, $config['gemstone_csrf']['key']);

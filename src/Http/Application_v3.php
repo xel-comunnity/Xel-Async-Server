@@ -177,7 +177,7 @@ final class Application_v3 implements ApplicationInterface
                     $response->header('Access-Control-Expose-Headers', implode(', ',$corsConfig['allowExposeHeaders'])); // Add this line
         
                 }else{
-                    $response->setStatusCode(403, 'Forbiden Access', 'blocked by cors');
+                    $response->setStatusCode(403, 'Forbiden Access blocked by cors');
                     $response->end('Forbiden access');
                 }
             }else{

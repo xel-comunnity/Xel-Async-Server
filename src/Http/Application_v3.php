@@ -166,10 +166,7 @@ final class Application_v3 implements ApplicationInterface
             $corsConfig = $config['securePost']['cors'];
             // Set CORS headers for all requests
             $whiteLits = $corsConfig['whitelists'];
-
-            var_dump(isset($request->header['origin']) ?? '', $request->header['host']);
-
-            if(isset($request->header['origin'])){
+            if(isset($request->header['origin']) === true){
                 // ? check origin in white list
                 $origin = $request->header['origin'];
                 if(in_array($origin, $whiteLits)){
@@ -184,11 +181,11 @@ final class Application_v3 implements ApplicationInterface
                     $response->end('Forbiden access');
                 }
             }else{
-                $response->header('Access-Control-Allow-Origin', $request->header['host']);
+                $sameOrigin  = $request->header['host'] === $corsConfig['allowOrigin'] ?  $request->header['host'] : false;
+                $response->header('Access-Control-Allow-Origin', $sameOrigin);
                 $response->header('Access-Control-Allow-Methods', implode(', ', $corsConfig['allowMethods']));
                 $response->header('Access-Control-Allow-Headers', implode(', ', $corsConfig['allowHeaders']));
-                $response->header('Access-Control-Expose-Headers', implode(', ',$corsConfig['allowExposeHeaders'])); // 
-
+                $response->header('Access-Control-Expose-Headers', implode(', ',$corsConfig['allowExposeHeaders'])); 
             }
 
             if ($corsConfig['allowCredentials']) {

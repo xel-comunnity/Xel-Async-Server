@@ -157,6 +157,7 @@ final class Application_v3 implements ApplicationInterface
      */
     public function onRequest(Request $request, Response $response): void
     {
+    
         $router = $this->main_v2;
         $config = $this->register->get('gemstone');
         /**
@@ -170,14 +171,14 @@ final class Application_v3 implements ApplicationInterface
 
                 // ? check origin in white list
                 $origin = $request->header['origin'];
-                var_dump($origin);
+                var_dump($origin, $whiteLits);
                 if(in_array($origin, $whiteLits)){
                     // Add CORS headers
                     $response->header('Access-Control-Allow-Origin', $origin);
                     $response->header('Access-Control-Allow-Methods', implode(', ', $corsConfig['allowMethods']));
                     $response->header('Access-Control-Allow-Headers', implode(', ', $corsConfig['allowHeaders']));
+                    $response->header('Access-Control-Allow-Credentials', $corsConfig['allowCredentials']);
                     $response->header('Access-Control-Expose-Headers', implode(', ',$corsConfig['allowExposeHeaders'])); // Add this line
-        
                 }else{
                     $response->setStatusCode(403, 'Forbiden Access blocked by cors');
                     $response->end('Forbiden access');
@@ -187,11 +188,8 @@ final class Application_v3 implements ApplicationInterface
                 $response->header('Access-Control-Allow-Origin', $sameOrigin);
                 $response->header('Access-Control-Allow-Methods', implode(', ', $corsConfig['allowMethods']));
                 $response->header('Access-Control-Allow-Headers', implode(', ', $corsConfig['allowHeaders']));
-                $response->header('Access-Control-Expose-Headers', implode(', ',$corsConfig['allowExposeHeaders'])); 
-            }
-
-            if ($corsConfig['allowCredentials']) {
                 $response->header('Access-Control-Allow-Credentials', $corsConfig['allowCredentials']);
+                $response->header('Access-Control-Expose-Headers', implode(', ',$corsConfig['allowExposeHeaders'])); 
             }
 
             // Handle preflight requests

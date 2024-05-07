@@ -160,6 +160,14 @@ final class Application_v3 implements ApplicationInterface
     
         $router = $this->main_v2;
         $config = $this->register->get('gemstone');
+
+        /**
+         * CSRF Protection
+         */
+        if ($config['gemstone_csrf']['condition'] === true && ($request->getMethod() === 'POST' || $request->getMethod() === 'PUT' || $request->getMethod() === 'PATCH' || $request->getMethod() === 'DELETE')) {
+            $this->csrfShield($request, $response, $config['gemstone_csrf']['key']);
+        }
+
         /**
          * Global Cors
          */
@@ -170,7 +178,6 @@ final class Application_v3 implements ApplicationInterface
             if(isset($request->header['origin']) === true){
                 // ? check origin in white list
                 $origin = $request->header['origin'];
-                var_dump($origin, $whiteLits);
                 if(in_array($origin, $whiteLits)){
                     // Add CORS headers
                     $response->header('Access-Control-Allow-Origin', $origin);
@@ -200,13 +207,7 @@ final class Application_v3 implements ApplicationInterface
             
         }
 
-        var_dump($request->header);
-        /**
-         */
-        if ($config['gemstone_csrf']['condition'] === true && $request->getMethod() === 'POST' || $request->getMethod() === 'PUT'  || $request->getMethod() === 'PATCH' || $request->getMethod() === 'DELETE') {
-            $this->csrfShield($request,$response, $config['gemstone_csrf']['key']);
-        }
-
+        
         /**
          * Gemstone CSRF
          */

@@ -164,7 +164,7 @@ final class Application_v3 implements ApplicationInterface
         /**
          * CSRF Protection
          */
-        if ($config['gemstone_csrf']['condition'] === true && ($request->getMethod() === 'POST' || $request->getMethod() === 'PUT' || $request->getMethod() === 'PATCH' || $request->getMethod() === 'DELETE')) {
+        if ($config['gemstone_csrf']['condition'] === true) {
             $this->csrfShield($request, $response, $config['gemstone_csrf']['key']);
         }
 
@@ -290,17 +290,21 @@ final class Application_v3 implements ApplicationInterface
 
     public function csrfShield(Request $request, Response $response, $key): void
     {
-        $data = $this->csrfManager;
-        if ($request->header['x-csrf-token'] != null) {
-           if ($data->validateToken($request->header['x-csrf-token'], $key) === false){
-               $response->setStatusCode(419, "Csrf Token Mismatch");
-               $response->end(json_encode(["error" =>"csrf token mismatch"]));
-           }
-           return;
-        }else{
-            $response->setStatusCode(419, "Csrf Token Mismatch");
-            $response->end(json_encode(["error" =>"csrf token mismatch"]));
-        }
 
+        // Only check CSRF token for non-GET requests
+        if ($request->getMethod() !== 'GET') {
+            $data = $this->csrfManager;
+            if ($request->header['x-csrf-token'] != null) {
+                if ($data->validateToken($request->header['x-csrf-token'], $key) === false) {
+                    $response->setStatusCode(419, "Csrf Token Mismatch");
+                    $response->end(json_encode(["error" => "csrf token mismatch"]));
+                }
+                return;
+            } else {
+                $response->setStatusCode(419, "Csrf Token Mismatch");
+                $response->end(json_encode(["error" => "csrf token mismatch"]));
+            }
+        }
+        
     }
 }

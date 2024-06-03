@@ -6,12 +6,14 @@ use DI\Container;
 use DI\DependencyException;
 use DI\NotFoundException;
 use Exception;
+use Swoole\Coroutine;
 use Swoole\Database\PDOConfig;
 use Swoole\Database\PDOPool;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Server;
 use Swoole\Server\Task;
+use Swoole\Timer;
 use Xel\Async\Contract\ApplicationInterface;
 use Xel\Async\Contract\JobInterface;
 use Xel\Async\Gemstone\Csrf_Shield;
@@ -38,6 +40,10 @@ final class Application_v3 implements ApplicationInterface
     )
     {}
 
+    /**
+     * @throws DependencyException
+     * @throws NotFoundException
+     */
     public function init(): void
     {
         Server_v2::init($this->config);
@@ -60,6 +66,7 @@ final class Application_v3 implements ApplicationInterface
 
         // ? server start
         $server->on('Start', [$this, 'onStart']);
+        $server->on('Connect', [$this, 'onConnect']);
         $server->on('WorkerStart', [$this, 'onWorkerStart']);
         $server->on('Request', [$this, 'onRequest']);
 
@@ -68,6 +75,19 @@ final class Application_v3 implements ApplicationInterface
         $server->on('finish', [$this, 'onFinish']);
         $server->start();
 
+    }
+
+    public function onConnect(Server $server, int $fd, int $reactorId): void
+    {
+        if (($fd % 3) === 0) {
+            // 1/3 of all HTTP requests have to wait for two seconds before being processed.
+            Timer::after(2000, function () use ($server, $fd) {
+                $server->confirm($fd);
+            });
+        } else {
+            // 2/3 of all HTTP requests are processed immediately by the server.
+            $server->confirm($fd);
+        }
     }
 
     /******************************************************************************************************************
@@ -108,10 +128,10 @@ final class Application_v3 implements ApplicationInterface
 
             if($sessionConfig['condition'] === true){
                 // Start a coroutine to handle session cleanup
-                \Swoole\Coroutine::create(function () use ($session, $sessionConfig){
+                Coroutine::create(function () use ($session, $sessionConfig){
                     while (true) {
                         // Sleep for 5 seconds
-                        \Swoole\Coroutine::sleep($sessionConfig['clear_rate']);
+                        Coroutine::sleep($sessionConfig['clear_rate']);
 
                         // Get the current session data
                         $data = $session->currentSession();
@@ -132,17 +152,11 @@ final class Application_v3 implements ApplicationInterface
                         }else{
                             $sessionCleared = 0;
                         }
-                        switch($sessionCleared){
-                            case 1 :
-                                echo "Already cleared and current session is : " . $session->count() . PHP_EOL;
-                                break;
-                            case 2 :
-                                echo "current session is : " . $session->count() . PHP_EOL;
-                                break;    
-                            default:
-                                echo '[HTTP1-ADVANCED]: Empty (' . date('H:i:s') . ')', PHP_EOL;
-                                break;
-                        }
+                        echo match ($sessionCleared) {
+                            1 => "Already cleared and current session is : " . $session->count() . PHP_EOL,
+                            2 => "current session is : " . $session->count() . PHP_EOL,
+                            default => '[HTTP1-ADVANCED]: Empty (' . date('H:i:s') . ')',
+                        };
                     
                     }
                 });
@@ -207,9 +221,8 @@ final class Application_v3 implements ApplicationInterface
             
         }
 
-        
         /**
-         * Gemstone CSRF
+         * Gemstone Limiter
          */
         if ($config['gemstone_limiter']['condition'] === false) {
             $router($this->server)

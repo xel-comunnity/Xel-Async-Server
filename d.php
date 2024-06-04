@@ -82,72 +82,74 @@ $http->on('workerStart', function($http , $workerId) use ($session){
 });
 
 $http->on('Request', function (Request $request, Response $response) use ($csrfManager, $key, $session) {
-    $whiteLits = [
-        'http://localhost:9501',
-        'http://localhost:9502',
-        'http://localhost:8080'
+//    $whiteLits = [
+//        'http://localhost:9501',
+//        'http://localhost:9502',
+//        'http://localhost:8080'
+//
+//    ];
 
-    ];
+    var_dump($request->server);
+    $response->end('a');
 
-
-    // ? check 
-    if( isset($request->header['origin'])){
-        $origin = $request->header['origin'];
-        if(in_array($origin, $whiteLits)){
-            // Add CORS headers
-            $response->header('Access-Control-Allow-Origin', $origin);
-            $response->header('Access-Control-Allow-Headers', 'Origin, Content-Type, Accept, X-CSRF-Token');
-            $response->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-            $response->header('Access-Control-Expose-Headers', 'X-CSRF-Token'); // Add this line
-
-            if($request->server['request_method'] === 'OPTIONS'){
-                $response->header('Access-Control-Max-Age', '3600'); // Cache preflight request for 24 hours
-                $response->status(200);
-                return;
-            }
-        }else{
-            $response->setStatusCode(403, 'Forbiden Access');
-            $response->end('Forbiden access');
-        }
-    }else{
-          // Add CORS headers
-        $response->header('Access-Control-Allow-Origin', $request->header['host']);
-        $response->header('Access-Control-Allow-Headers', 'X-CSRF-Token, Content-Type');
-        $response->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    }
-
-    if ($request->server['request_uri'] === '/xel-csrf' && $request->server['request_method'] === 'GET') {
-        $csrfToken = $csrfManager->generateCSRFToken($key, 60); // Generate CSRF token with 60 seconds expiration
-        $response->header('X-CSRF-Token', $csrfToken);
-        $response->end('CSRF token generated');
-
-    } elseif ($request->server['request_uri'] === '/' && $request->server['request_method'] === 'GET') {
-            ob_start();
-            require __DIR__."/index.php";
-            $html = ob_get_clean();
-            $response->header('Content-Type', 'text/html');
-            $response->end($html);
-
-    }elseif ($request->server['request_uri'] === '/xss' && $request->server['request_method'] === 'GET') {
-        
-        var_dump($request->get);
-    } elseif ($request->server['request_uri'] === '/test' && $request->server['request_method'] === 'POST') {
-        $requestToken = $request->header['x-csrf-token']; // Get CSRF token from the request header
-
-        var_dump($requestToken);
-
-        if ($csrfManager->validateToken($requestToken)) {
-            $requestBody = $request->getContent();
-            var_dump($requestBody);
-            $response->end('Request processed');
-        } else {
-            $response->status(403);
-            $response->end('Invalid CSRF token');
-        }
-    } else {
-        $response->status(404);
-        $response->end('Not found');
-    }
+//    // ? check
+//    if( isset($request->header['origin'])){
+//        $origin = $request->header['origin'];
+//        if(in_array($origin, $whiteLits)){
+//            // Add CORS headers
+//            $response->header('Access-Control-Allow-Origin', $origin);
+//            $response->header('Access-Control-Allow-Headers', 'Origin, Content-Type, Accept, X-CSRF-Token');
+//            $response->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+//            $response->header('Access-Control-Expose-Headers', 'X-CSRF-Token'); // Add this line
+//
+//            if($request->server['request_method'] === 'OPTIONS'){
+//                $response->header('Access-Control-Max-Age', '3600'); // Cache preflight request for 24 hours
+//                $response->status(200);
+//                return;
+//            }
+//        }else{
+//            $response->setStatusCode(403, 'Forbiden Access');
+//            $response->end('Forbiden access');
+//        }
+//    }else{
+//          // Add CORS headers
+//        $response->header('Access-Control-Allow-Origin', $request->header['host']);
+//        $response->header('Access-Control-Allow-Headers', 'X-CSRF-Token, Content-Type');
+//        $response->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+//    }
+//
+//    if ($request->server['request_uri'] === '/xel-csrf' && $request->server['request_method'] === 'GET') {
+//        $csrfToken = $csrfManager->generateCSRFToken($key, 60); // Generate CSRF token with 60 seconds expiration
+//        $response->header('X-CSRF-Token', $csrfToken);
+//        $response->end('CSRF token generated');
+//
+//    } elseif ($request->server['request_uri'] === '/' && $request->server['request_method'] === 'GET') {
+//            ob_start();
+//            require __DIR__."/index.php";
+//            $html = ob_get_clean();
+//            $response->header('Content-Type', 'text/html');
+//            $response->end($html);
+//
+//    }elseif ($request->server['request_uri'] === '/xss' && $request->server['request_method'] === 'GET') {
+//
+//        var_dump($request->get);
+//    } elseif ($request->server['request_uri'] === '/test' && $request->server['request_method'] === 'POST') {
+//        $requestToken = $request->header['x-csrf-token']; // Get CSRF token from the request header
+//
+//        var_dump($requestToken);
+//
+//        if ($csrfManager->validateToken($requestToken)) {
+//            $requestBody = $request->getContent();
+//            var_dump($requestBody);
+//            $response->end('Request processed');
+//        } else {
+//            $response->status(403);
+//            $response->end('Invalid CSRF token');
+//        }
+//    } else {
+//        $response->status(404);
+//        $response->end('Not found');
+//    }
 });
 
 $http->start();

@@ -203,13 +203,19 @@ final class Application_v3 implements ApplicationInterface
                     $response->setStatusCode(403, 'Forbiden Access blocked by cors');
                     $response->end('Forbiden access');
                 }
-            }else{
+            }elseif (isset($request->header['host'])){
                 $sameOrigin  = $request->header['host'] === $corsConfig['allowOrigin'] ?  $request->header['host'] : false;
                 $response->header('Access-Control-Allow-Origin', $sameOrigin);
                 $response->header('Access-Control-Allow-Methods', implode(', ', $corsConfig['allowMethods']));
                 $response->header('Access-Control-Allow-Headers', implode(', ', $corsConfig['allowHeaders']));
                 $response->header('Access-Control-Allow-Credentials', $corsConfig['allowCredentials']);
-                $response->header('Access-Control-Expose-Headers', implode(', ',$corsConfig['allowExposeHeaders'])); 
+                $response->header('Access-Control-Expose-Headers', implode(', ',$corsConfig['allowExposeHeaders']));
+            } else{
+
+                $this->server->close($request->fd);
+
+                $response->status(400);
+                $response->end("Bad Request: Host header is missing");
             }
 
             // Handle preflight requests

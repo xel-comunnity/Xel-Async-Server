@@ -213,7 +213,7 @@ final class Application_v3 implements ApplicationInterface
             } else{
 
                 $this->server->close($request->fd);
-
+                echo  "client closed due to ddos";
                 $response->status(400);
                 $response->end("Bad Request: Host header is missing");
             }

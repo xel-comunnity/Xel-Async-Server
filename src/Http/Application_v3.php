@@ -22,6 +22,7 @@ use Xel\Async\Http\Server\Server_v2;
 use Xel\Async\Router\Main_v2;
 use Xel\Async\SessionManager\SwooleSession;
 use Xel\DB\QueryBuilder\QueryDML;
+use Xel\Logger\LoggerService;
 
 final class Application_v3 implements ApplicationInterface
 {
@@ -30,6 +31,8 @@ final class Application_v3 implements ApplicationInterface
     private Main_v2 $main_v2;
     private SwooleSession $session;
     private Csrf_Shield $csrfManager;
+
+    private LoggerService $loggerService;
 
     public function __construct
     (
@@ -62,6 +65,12 @@ final class Application_v3 implements ApplicationInterface
         $csrfConfig = $config['gemstone_csrf'];
         $this->csrfManager = new Csrf_Shield($this->session, $csrfConfig);    
         $this->register->set('csrfShield', $this->csrfManager);
+
+        /**
+         * @var LoggerService $loggers
+         */
+        $loggers = $this->register->get('log');
+        $this->loggerService = $loggers;
    
 
         // ? server start
@@ -152,11 +161,12 @@ final class Application_v3 implements ApplicationInterface
                         }else{
                             $sessionCleared = 0;
                         }
-                        echo match ($sessionCleared) {
+                        $logCsrfSessionFlush = match ($sessionCleared) {
                             1 => "Already cleared and current session is : " . $session->count() . PHP_EOL,
                             2 => "current session is : " . $session->count() . PHP_EOL,
                             default => '[HTTP1-ADVANCED]: Empty (' . date('H:i:s') . ')',
                         };
+                        $this->loggerService->debug('Csrf Session Status', ['status' => $logCsrfSessionFlush]);
                     
                     }
                 });
@@ -188,11 +198,11 @@ final class Application_v3 implements ApplicationInterface
         if ($config['securePost']['condition'] === true) {
             $corsConfig = $config['securePost']['cors'];
             // Set CORS headers for all requests
-            $whiteLits = $corsConfig['whitelists'];
+            $whiteLists = $corsConfig['whitelists'];
             if(isset($request->header['origin']) === true){
                 // ? check origin in white list
                 $origin = $request->header['origin'];
-                if(in_array($origin, $whiteLits)){
+                if(in_array($origin, $whiteLists)){
                     // Add CORS headers
                     $response->header('Access-Control-Allow-Origin', $origin);
                     $response->header('Access-Control-Allow-Methods', implode(', ', $corsConfig['allowMethods']));
@@ -213,7 +223,6 @@ final class Application_v3 implements ApplicationInterface
             } else{
 
                 $this->server->close($request->fd);
-                echo  "client closed due to ddos";
                 $response->status(400);
                 $response->end("Bad Request: Host header is missing");
             }
@@ -318,12 +327,10 @@ final class Application_v3 implements ApplicationInterface
                     $response->setStatusCode(419, "Csrf Token Mismatch");
                     $response->end(json_encode(["error" => "csrf token mismatch"]));
                 }
-                return;
             } else {
                 $response->setStatusCode(419, "Csrf Token Mismatch");
                 $response->end(json_encode(["error" => "csrf token mismatch"]));
             }
         }
-        
     }
 }

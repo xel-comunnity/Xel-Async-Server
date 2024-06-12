@@ -1,0 +1,12 @@
+This is a log message
+This is another log message
+This is a log message
+This is another log message
+Processing request: /
+Request processed successfully
+Processing request: /
+Request processed successfully
+Processing request: /
+Request processed successfully
+Processing request: /
+Request processed successfully

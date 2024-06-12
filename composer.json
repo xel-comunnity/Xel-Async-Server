@@ -27,10 +27,11 @@
         "nyholm/psr7": "^1.8",
         "xel/psr7bridge": "0.1.4",
         "psr/http-server-middleware": "^1.0",
-      "ext-pdo": "*",
+          "ext-pdo": "*",
         "xel/orm": "^1.0",
       "ext-openssl": "*",
-        "swoole/ide-helper": "@dev"
+        "swoole/ide-helper": "@dev",
+        "xel/logger": "dev-main"
     },
     "scripts": {
         "analyse": "phpstan analyse"
@@ -42,5 +43,7 @@
     },
     "require-dev": {
         "pestphp/pest": "^2.34"
-    }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }

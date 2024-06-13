@@ -3,7 +3,7 @@
 namespace Xel\Async\Gemstone;
 use Exception;
 use Swoole\Http\Request;
-use Swoole\Http\Response;
+use Swoole\Server;
 use Swoole\Table;
 
 class SlidingWindowLimiter
@@ -16,6 +16,7 @@ class SlidingWindowLimiter
 
     private array $black_list;
     private array $blacklistedIps;
+
 
     public function __construct(int $maxRequests, int $windowSize, array $blacklist)
     {
@@ -37,14 +38,14 @@ class SlidingWindowLimiter
     /**
      * @throws Exception
      */
-    public function isAllowed(Request $request, Response $response): bool
+    public function isAllowed(Request $request): bool
     {
         $key = $request->header['x-forwarded-for'] ?? $request->server['remote_addr'];
 
         if (in_array($key,$this->blacklistedIps,true)){
             throw new Exception("IP address $key is blocked.", 403);
-
         }
+
         $currentTime = time();
         $requests = 0;
         $lastResetTime = 0;
@@ -73,6 +74,17 @@ class SlidingWindowLimiter
 
         $this->table->incr($key, 'requests', 1);
         return true;
+    }
+
+    public function checkBlackListed(Server $server, $fd):bool
+    {
+        $clientInfo = $server->getClientInfo($fd);
+        $key = $clientInfo['remote_ip'];
+
+        if (in_array($key,$this->blacklistedIps,true)){
+           return true;
+        }
+        return false;
     }
 
     /**

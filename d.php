@@ -1,101 +1,145 @@
 <?php
-
+//
 require __DIR__."/vendor/autoload.php";
-// ClassSnapshot class
-class ClassSnapshot
-{
-    private static array $instances = [];
 
-    public static function register($instance): void
-    {
-        $className = get_class($instance);
-        if (!isset(self::$instances[$className])) {
-            self::$instances[$className] = [];
+
+use Swoole\Http\Server;
+use Swoole\Http\Request;
+use Swoole\Http\Response;
+use Xel\Async\Gemstone\SlidingWindowsLimiter_V2;
+
+
+$server = new Server('0.0.0.0', 9501);
+$server->set([
+    'worker_num' => swoole_cpu_num(),
+//    'socket_buffer_size' => swoole_cpu_num() * 1024 *1024, //必须为数字，单位为字节，如128 * 1024 *1024表示每个TCP客户端连接最大允许有128M待发送的数据
+//    'send_yield' => true,
+//    'send_timeout' => 5, // 1.5秒
+
+
+]);
+$limiter = new SlidingWindowsLimiter_V2(1000, 60, false, __DIR__.'/blacklist.php');
+$server->on('connect', function (Server $server, int $fd) use ($limiter) {
+    try {
+        if (!$limiter->isAllowed($server, $fd)) {
+            $server->close($fd);
         }
-        self::$instances[$className][] = $instance;
+    } catch (Exception $e) {
+        // Log the exception
+        $server->close($fd);
     }
+});
 
-    public static function flush()
-    {
-        foreach (self::$instances as $className => $instances) {
-            foreach ($instances as $instance) {
-                if (method_exists($instance, 'flush')) {
-                    $instance->flush();
-                }
-            }
-        }
-        self::$instances = [];
-    }
-}
+// To enable blacklisting later:
+// $limiter->enableBlacklisting(true);
 
+// To add an IP to the blacklist:
+// $limiter->addToBlacklist('192.168.1.1');
 
-// Logger class (same as before)
-class Logger
-{
-    private static ?Logger $instance = null;
-    private $logFile;
-    private $logFilePath = 'log.txt';
+// To remove an IP from the blacklist:
+// $limiter->removeFromBlacklist('192.168.1.1');
 
-    private function __construct()
-    {
-        $this->openLogFile();
-        ClassSnapshot::register($this);
-    }
-
-    private function openLogFile(): void
-    {
-        $this->logFile = fopen($this->logFilePath, 'a');
-    }
-
-    public static function getInstance(): ?Logger
-    {
-        if (self::$instance === null) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
-
-    public function log($message): void
-    {
-        fwrite($this->logFile, $message . PHP_EOL);
-    }
-
-    public function flush()
-    {
-        fclose($this->logFile);
-        $this->openLogFile();
-    }
-}
-
-
-// Example usage in your application code
-$logger = Logger::getInstance();
-
-// Log a message
-$logger->log('This is a log message');
-
-// Log another message
-$logger->log('This is another log message');
-
-// In your Swoole HTTP server code
-$server = new Swoole\Http\Server('0.0.0.0', 9501);
-
-$server->on('request', function ($request, $response) {
-    // Flush or reset shared state
-    ClassSnapshot::flush();
-
-    // Process the request
-    $logger = Logger::getInstance();
-    $logger->log('Processing request: ' . $request->server['request_uri']);
-
-    // ... (handle the request)
-
-    $logger->log('Request processed successfully');
-    // ...
+$server->on('Request', function (Request $request, Response $response) {
+    $response->header('Content-Type', 'text/plain');
+    $response->end("Hello, Swoole!");
 });
 
 $server->start();
+//// ClassSnapshot class
+//class ClassSnapshot
+//{
+//    private static array $instances = [];
+//
+//    public static function register($instance): void
+//    {
+//        $className = get_class($instance);
+//        if (!isset(self::$instances[$className])) {
+//            self::$instances[$className] = [];
+//        }
+//        self::$instances[$className][] = $instance;
+//    }
+//
+//    public static function flush()
+//    {
+//        foreach (self::$instances as $className => $instances) {
+//            foreach ($instances as $instance) {
+//                if (method_exists($instance, 'flush')) {
+//                    $instance->flush();
+//                }
+//            }
+//        }
+//        self::$instances = [];
+//    }
+//}
+//
+//
+//// Logger class (same as before)
+//class Logger
+//{
+//    private static ?Logger $instance = null;
+//    private $logFile;
+//    private $logFilePath = 'log.txt';
+//
+//    private function __construct()
+//    {
+//        $this->openLogFile();
+//        ClassSnapshot::register($this);
+//    }
+//
+//    private function openLogFile(): void
+//    {
+//        $this->logFile = fopen($this->logFilePath, 'a');
+//    }
+//
+//    public static function getInstance(): ?Logger
+//    {
+//        if (self::$instance === null) {
+//            self::$instance = new self();
+//        }
+//
+//        return self::$instance;
+//    }
+//
+//    public function log($message): void
+//    {
+//        fwrite($this->logFile, $message . PHP_EOL);
+//    }
+//
+//    public function flush()
+//    {
+//        fclose($this->logFile);
+//        $this->openLogFile();
+//    }
+//}
+//
+//
+//// Example usage in your application code
+//$logger = Logger::getInstance();
+//
+//// Log a message
+//$logger->log('This is a log message');
+//
+//// Log another message
+//$logger->log('This is another log message');
+//
+//// In your Swoole HTTP server code
+//$server = new Swoole\Http\Server('0.0.0.0', 9501);
+//
+//$server->on('request', function ($request, $response) {
+//    // Flush or reset shared state
+//    ClassSnapshot::flush();
+//
+//    // Process the request
+//    $logger = Logger::getInstance();
+//    $logger->log('Processing request: ' . $request->server['request_uri']);
+//
+//    // ... (handle the request)
+//
+//    $logger->log('Request processed successfully');
+//    // ...
+//});
+//
+//$server->start();
 
 
 //

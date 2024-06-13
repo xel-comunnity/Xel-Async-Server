@@ -88,14 +88,19 @@ final class Application_v3 implements ApplicationInterface
 
     public function onConnect(Server $server, int $fd, int $reactorId): void
     {
-        if (($fd % 3) === 0) {
-            // 1/3 of all HTTP requests have to wait for two seconds before being processed.
-            Timer::after(2000, function () use ($server, $fd) {
+        // if there is ip, it will close immediately to prevent full limiter in http level
+        if ($this->bucketLimiter->checkBlackListed($server,$fd) === true){
+            $server->close($fd);
+        }else{
+            if (($fd % 3) === 0) {
+                // 1/3 of all HTTP requests have to wait for two seconds before being processed.
+                Timer::after(2000, function () use ($server, $fd) {
+                    $server->confirm($fd);
+                });
+            } else {
+                // 2/3 of all HTTP requests are processed immediately by the server.
                 $server->confirm($fd);
-            });
-        } else {
-            // 2/3 of all HTTP requests are processed immediately by the server.
-            $server->confirm($fd);
+            }
         }
     }
 
@@ -158,9 +163,8 @@ final class Application_v3 implements ApplicationInterface
                                     $sessionCleared = 2;
                                 }
                             }
-                        }else{
-                            $sessionCleared = 0;
                         }
+
                         $logCsrfSessionFlush = match ($sessionCleared) {
                             1 => "Already cleared and current session is : " . $session->count() . PHP_EOL,
                             2 => "current session is : " . $session->count() . PHP_EOL,

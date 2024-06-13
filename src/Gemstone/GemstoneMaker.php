@@ -4,7 +4,6 @@ namespace Xel\Async\Gemstone;
 
 use InvalidArgumentException;
 use Xel\Async\Contract\GemstoneMakerInterface;
-
 class GemstoneMaker implements GemstoneMakerInterface
 {
     private array $gemstones;

@@ -28,7 +28,7 @@
         "xel/psr7bridge": "0.1.4",
         "psr/http-server-middleware": "^1.0",
           "ext-pdo": "*",
-        "xel/orm": "^1.0",
+        "xel/orm": "dev-main",
       "ext-openssl": "*",
         "swoole/ide-helper": "@dev",
         "xel/logger": "dev-main"

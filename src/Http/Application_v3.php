@@ -118,7 +118,20 @@ final class Application_v3 implements ApplicationInterface
      */
     public function onWorkerStart(Server $server, $workerId): void
     {
+        // ? xgen connector
+        $conn = new PDOPool((new PDOConfig())
+            ->withDriver($this->dbConfig['driver'])
+            ->withCharset($this->dbConfig['charset'])
+            ->withHost($this->dbConfig['host'])
+            ->withUsername($this->dbConfig['username'])
+            ->withPassword($this->dbConfig['password'])
+            ->withDbname($this->dbConfig['dbname'])
+            ->withOptions($this->dbConfig['options']),
+            $this->dbConfig['pool']);
 
+        // ? Query Builder
+        $builder = new QueryDML($conn, $this->dbConfig['poolMode']);
+        $this->register->set('xgen', $builder);
         
         if ($workerId === 0) {
             // ? get config 
@@ -172,20 +185,7 @@ final class Application_v3 implements ApplicationInterface
      */
     public function onRequest(Request $request, Response $response): void
     {
-        // ? xgen connector
-        $conn = new PDOPool((new PDOConfig())
-            ->withDriver($this->dbConfig['driver'])
-            ->withCharset($this->dbConfig['charset'])
-            ->withHost($this->dbConfig['host'])
-            ->withUsername($this->dbConfig['username'])
-            ->withPassword($this->dbConfig['password'])
-            ->withDbname($this->dbConfig['dbname'])
-            ->withOptions($this->dbConfig['options']),
-            $this->dbConfig['pool']);
 
-        // ? Query Builder
-        $builder = new QueryDML($conn, $this->dbConfig['poolMode']);
-        $this->register->set('xgen', $builder);
     
         $router = $this->main_v2;
         $config = $this->register->get('gemstone');

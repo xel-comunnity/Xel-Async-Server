@@ -334,7 +334,7 @@ final class Application_v3 implements ApplicationInterface
                     $response->end(json_encode(["error" => "csrf token mismatch"]));
                 }
             } else {
-                $response->setStatusCode(419, "Csrf Token Mismatch");
+                $response->setStatusCode(419, "Csrf Token Missing");
                 $response->end(json_encode(["error" => "provide csrf token"]));
             }
         }

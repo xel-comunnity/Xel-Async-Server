@@ -214,7 +214,14 @@ final class Application_v3 implements ApplicationInterface
                     $response->header('Access-Control-Allow-Methods', implode(', ', $corsConfig['allowMethods']));
                     $response->header('Access-Control-Allow-Headers', implode(', ', $corsConfig['allowHeaders']));
                     $response->header('Access-Control-Allow-Credentials', $corsConfig['allowCredentials']);
-                    $response->header('Access-Control-Expose-Headers', implode(', ',$corsConfig['allowExposeHeaders'])); // Add this line
+                    $response->header('Access-Control-Expose-Headers', implode(', ',$corsConfig['allowExposeHeaders']));
+
+                     // Handle preflight requests
+                    if ($request->server['request_method'] === 'OPTIONS') {
+                        $response->header('Access-Control-Max-Age', $corsConfig['maxAge']);
+                        $response->status(200);                    
+                        return;
+                    }
                 }else{
                     $response->setStatusCode(403, 'Forbiden Access blocked by cors');
                     $response->end('Forbiden access');
@@ -233,12 +240,7 @@ final class Application_v3 implements ApplicationInterface
                 $response->end("Bad Request: Host header is missing");
             }
 
-            // Handle preflight requests
-            if ($request->server['request_method'] === 'OPTIONS') {
-                $response->header('Access-Control-Max-Age', $corsConfig['maxAge']);
-                $response->status(200);                    
-                return;
-            }
+           
             
         }
 

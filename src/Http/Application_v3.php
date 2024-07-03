@@ -190,14 +190,7 @@ final class Application_v3 implements ApplicationInterface
         $router = $this->main_v2;
         $config = $this->register->get('gemstone');
 
-        /**
-         * CSRF Protection
-         */
-        if ($config['gemstone_csrf']['condition'] === true) {
-            var_dump($request->header);
-            $this->csrfShield($request, $response, $config['gemstone_csrf']['key']);
-        }
-
+       
         /**
          * Global Cors
          */
@@ -219,8 +212,8 @@ final class Application_v3 implements ApplicationInterface
                      // Handle preflight requests
                     if ($request->server['request_method'] === 'OPTIONS') {
                         $response->header('Access-Control-Max-Age', $corsConfig['maxAge']);
-                        $response->status(200);                    
-                        return;
+                        $response->status(204);
+                        $response->end();                    
                     }
                 }else{
                     $response->setStatusCode(403, 'Forbiden Access blocked by cors');
@@ -239,10 +232,17 @@ final class Application_v3 implements ApplicationInterface
                 $response->status(400);
                 $response->end("Bad Request: Host header is missing");
             }
-
-           
-            
+ 
         }
+
+         /**
+         * CSRF Protection
+         */
+        if ($config['gemstone_csrf']['condition'] === true) {
+            var_dump($request->header);
+            $this->csrfShield($request, $response, $config['gemstone_csrf']['key']);
+        }
+
 
         /**
          * Gemstone Limiter

@@ -239,7 +239,6 @@ final class Application_v3 implements ApplicationInterface
          * CSRF Protection
          */
         if ($config['gemstone_csrf']['condition'] === true) {
-            var_dump($request->header);
             $this->csrfShield($request, $response, $config['gemstone_csrf']['key']);
         }
 
